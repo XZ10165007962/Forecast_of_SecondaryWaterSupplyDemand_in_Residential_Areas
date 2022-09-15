@@ -10,9 +10,11 @@
 # Notice:
 # -------------------------------------------------------------------------------
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler
 
+import conf
 
 # 设置value的显示长度为200，默认为50
 pd.set_option('max_colwidth', 200)
@@ -21,18 +23,33 @@ pd.set_option('display.max_columns', None)
 # 显示所有行，把列显示设置成最大
 pd.set_option('display.max_rows', None)
 
+"""
+整个数据 2022-01-01 01:00:00 开始
+训练集划分为
+test1 开始 2022-04-01 01:00:00 2161  结束 2022-04-08 00:00:00  2328
+"""
+"""
+test1 开始 2022-05-01 01:00:00 2885  结束 2022-05-08 00:00:00  3048
+test2 开始 2022-06-01 01:00:00 3629  结束 2022-06-08 00:00:00  3792
+test3 开始 2022-07-21 01:00:00 4829  结束 2022-07-28 00:00:00  4992
+test4 开始 2022-08-21 01:00:00 5573  结束 2022-08-28 00:00:00  5736
+"""
 
-data = pd.read_csv("../data/use_data/training_dataset/daily_dataset.csv")
-stand = StandardScaler()
-data1 = data.loc[:, ["flow_1", "flow_2", "flow_3", "flow_4", "flow_5", "flow_6"]]
-data1 = stand.fit_transform(data1)
-data1 = pd.DataFrame(data1,columns=["flow_1", "flow_2", "flow_3", "flow_4", "flow_5", "flow_6"])
-data1.plot.line()
-plt.show()
-# for i in [
-#     ["flow_1", "flow_2", "flow_3", "flow_4", "flow_5", "flow_6", "flow_7"],
-#     ["flow_8", "flow_9", "flow_10", "flow_11", "flow_12", "flow_13", "flow_14"],
-#     ["flow_15", "flow_16", "flow_17", "flow_18", "flow_19", "flow_20"]]:
-#     data1 = data.loc[:, i]
-#     data1.plot.line()
-#     plt.show()
+
+def get_data():
+	data = pd.read_csv(conf.train_data_path + "hourly_dataset.csv")
+	data["time_index"] = np.arange(1, data.shape[0] + 1)
+	data = data[data["time_index"] <= 2328]
+	return data
+
+
+def split_data(data_, split_col, split_flag, label_col):
+	train_data = data_[data_[split_col] < split_flag]
+	test_data = data_[data_[split_col] >= split_flag]
+	feature_col = [i for i in data_.columns if i != label_col]
+	train_x = train_data.loc[:, feature_col]
+	train_y = train_data[label_col]
+	test_x = test_data.loc[:, feature_col]
+	test_y = test_data[label_col]
+
+	return train_x, train_y, test_x, test_y
