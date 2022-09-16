@@ -28,3 +28,4 @@ pd.set_option('max_colwidth', 200)
 if __name__ == '__main__':
     data = data.get_data()
     data, feature = features.get_features(data)
+    label = ["label"]

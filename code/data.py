@@ -43,13 +43,11 @@ def get_data():
 	return data
 
 
-def split_data(data_, split_col, split_flag, label_col):
+def split_data(data_, split_col, split_flag, label_col, feature_col):
 	train_data = data_[data_[split_col] < split_flag]
-	test_data = data_[data_[split_col] >= split_flag]
-	feature_col = [i for i in data_.columns if i != label_col]
+	test_data = data_[data_[split_col] == split_flag]
 	train_x = train_data.loc[:, feature_col]
 	train_y = train_data[label_col]
 	test_x = test_data.loc[:, feature_col]
 	test_y = test_data[label_col]
-
 	return train_x, train_y, test_x, test_y

@@ -61,10 +61,10 @@ def get_features(data_, lag=24, rolling=2):
 	for func in funcs:
 		all_data[f"flow_id_{func}"] = all_data.groupby(["flow_id"])["flow"].transform(func)
 		features.append(f"flow_id_{func}")
-	print(all_data.head())
+	print(all_data.shape)
 	for func in funcs:
 		simple[f"month_{func}"] = simple.groupby(["month", "flow_id"])["flow"].transform(func)
-		simple[f"month_weekday_{func}"] = simple.groupby(["day", "is_weekday", "flow_id"])["flow"].transform(func)
+		simple[f"month_weekday_{func}"] = simple.groupby(["month", "is_weekday", "flow_id"])["flow"].transform(func)
 		for i in range(1, flag):
 			simple.rename(
 				columns={f"month_{func}":f"month_{func}_{i}", f"month_weekday_{func}":f"month_weekday_{func}_{i}"},
@@ -75,8 +75,8 @@ def get_features(data_, lag=24, rolling=2):
 			simple["month"] = list(map(lambda x: x+1, simple["month"]))
 			all_data = all_data.merge(simple.loc[:, ["month", "flow_id", f"month_{func}_{i}"]].drop_duplicates(),
 									  on=["month", "flow_id"], how="left")
-			all_data = all_data.merge(simple.loc[:, ["month", "flow_id", f"month_weekday_{func}_{i}"]].drop_duplicates(),
-									  on=["month", "flow_id"], how="left")
+			all_data = all_data.merge(simple.loc[:, ["month", "is_weekday", "flow_id", f"month_weekday_{func}_{i}"]].drop_duplicates(),
+									  on=["month", "is_weekday", "flow_id"], how="left")
 	for func in funcs:
 		simple[f"week_{func}"] = simple.groupby(["week", "flow_id"])["flow"].transform(func)
 		for i in range(1, flag):
@@ -90,7 +90,7 @@ def get_features(data_, lag=24, rolling=2):
 									  on=["week", "flow_id"], how="left")
 	for func in funcs:
 		simple[f"day_{func}"] = simple.groupby(["dayofyear", "flow_id"])["flow"].transform(func)
-		simple[f"day_free_{func}"] = simple.groupby(["month", "is_free", "flow_id"])["flow"].transform(func)
+		simple[f"day_free_{func}"] = simple.groupby(["dayofyear", "is_free", "flow_id"])["flow"].transform(func)
 		for i in range(1, flag):
 			simple.rename(
 				columns={f"day_{func}": f"day_{func}_{i}", f"day_free_{func}": f"day_free_{func}_{i}"},
@@ -104,6 +104,7 @@ def get_features(data_, lag=24, rolling=2):
 			all_data = all_data.merge(simple.loc[:, ["dayofyear", "flow_id", f"day_{func}_{i}"]].drop_duplicates(),
 									  on=["dayofyear", "flow_id"], how="left")
 
+	all_data["label"] = all_data.groupby(["flow_id"])["flow"].shift(-1)
 	return all_data, features
 
 
