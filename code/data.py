@@ -37,17 +37,36 @@ test4 开始 2022-08-21 01:00:00 5573  结束 2022-08-28 00:00:00  5736
 
 
 def get_data():
-	data = pd.read_csv(conf.train_data_path + "hourly_dataset.csv")
-	data["time_index"] = np.arange(1, data.shape[0] + 1)
-	data = data[data["time_index"] <= 2328]
-	return data
+	data_ = pd.read_csv(conf.train_data_path + "hourly_dataset.csv")
+	data_["time_index"] = np.arange(1, data_.shape[0] + 1)
+	flow_id = [
+		"flow_1", "flow_2", "flow_3", "flow_4", "flow_5", "flow_6", "flow_7", "flow_8", "flow_9", "flow_10", "flow_11",
+		"flow_12", "flow_13", "flow_14", "flow_15", "flow_16", "flow_17", "flow_18", "flow_19", "flow_20"
+	]
+	all_data = pd.DataFrame()
+	for i, flow in enumerate(flow_id):
+		if i == 0:
+			data = data_.loc[:, ["time", "time_index", flow]].rename(columns={flow: "flow"})
+			data["flow_id"] = flow
+			all_data = data
+		else:
+			data = data_.loc[:, ["time", "time_index", flow]].rename(columns={flow: "flow"})
+			data["flow_id"] = flow
+			all_data = pd.concat([all_data, data], axis=0)
+	all_data = all_data[all_data["time_index"] <= 2327]
+	all_data["pre"] = 0
+	all_data["flow_true"] = all_data["flow"]
+	return all_data
 
 
 def split_data(data_, split_col, split_flag, label_col, feature_col):
-	train_data = data_[data_[split_col] < split_flag]
+	train_data = data_[data_[split_col] < split_flag-2]
+	val_data = data_[data_[split_col] == split_flag-1]
 	test_data = data_[data_[split_col] == split_flag]
 	train_x = train_data.loc[:, feature_col]
-	train_y = train_data[label_col]
+	train_y = train_data.loc[:, [label_col]]
+	val_x = val_data.loc[:, feature_col]
+	val_y = val_data.loc[:, [label_col]]
 	test_x = test_data.loc[:, feature_col]
-	test_y = test_data[label_col]
-	return train_x, train_y, test_x, test_y
+	test_y = test_data.loc[:, [label_col]]
+	return train_x, train_y, val_x, val_y, test_x, test_y

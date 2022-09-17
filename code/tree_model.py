@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 """
 @author: BigZhuang
-@file: lgb_model.py
+@file: tree_model.py
 @time: 2022/9/15 10:42
 @version:
 @desc: 
@@ -15,6 +15,7 @@ import numpy as np
 from sklearn.model_selection import StratifiedKFold, KFold
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 import copy
+from keras.losses import MeanSquaredLogarithmicError
 
 warnings.filterwarnings('ignore')
 
@@ -127,14 +128,14 @@ def model(clf, train_x, train_y, test_x, clf_name, val_x, val_y):
             'objective': 'regression_l1',  # 回归问题
             'metric': 'mae',  # 评价指标
             'min_child_weight': 3,
-            'num_leaves': 2 ** 3,
+            'num_leaves': 2 ** 4,
             'lambda_l2': 10,
             'feature_fraction': 0.9,
             'bagging_fraction': 0.9,
             'bagging_freq': 10,
-            'learning_rate': 0.05,
+            'learning_rate': 0.1,
             'seed': 2022,
-            'max_depth': 3,
+            # 'max_depth': 3,
             'verbose': -1,
             'n_jobs': -1
         }
@@ -149,8 +150,9 @@ def model(clf, train_x, train_y, test_x, clf_name, val_x, val_y):
                 zip(train_x.columns, model.feature_importance('gain')),
                 key=lambda x: x[1], reverse=True)
         ))
-        print("%s_score:" % clf_name, mean_absolute_error(val_y, val_pred))
-        print("%s_score:" % clf_name, mean_squared_error(val_y, val_pred))
+        print("%s_mae:" % clf_name, mean_absolute_error(val_y, val_pred))
+        print("%s_mse:" % clf_name, mean_squared_error(val_y, val_pred))
+        print("%s_msge:" % clf_name, MeanSquaredLogarithmicError(val_y, val_pred))
 
     elif clf_name == 'cat':
         params = {'learning_rate': 0.05, 'depth': 9, 'l2_leaf_reg': 10, 'bootstrap_type': "Bayesian",
