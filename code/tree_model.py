@@ -15,8 +15,6 @@ import numpy as np
 from sklearn.model_selection import StratifiedKFold, KFold
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 import copy
-from keras.losses import MeanSquaredLogarithmicError
-
 warnings.filterwarnings('ignore')
 
 
@@ -152,7 +150,6 @@ def model(clf, train_x, train_y, test_x, clf_name, val_x, val_y):
         ))
         print("%s_mae:" % clf_name, mean_absolute_error(val_y, val_pred))
         print("%s_mse:" % clf_name, mean_squared_error(val_y, val_pred))
-        print("%s_msge:" % clf_name, MeanSquaredLogarithmicError(val_y, val_pred))
 
     elif clf_name == 'cat':
         params = {'learning_rate': 0.05, 'depth': 9, 'l2_leaf_reg': 10, 'bootstrap_type': "Bayesian",
