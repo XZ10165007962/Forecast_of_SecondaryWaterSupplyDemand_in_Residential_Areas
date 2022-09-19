@@ -137,6 +137,22 @@ def model(clf, train_x, train_y, test_x, clf_name, val_x, val_y):
             'verbose': -1,
             'n_jobs': -1
         }
+        params = {
+            'boosting_type': 'gbdt',
+            'objective': 'regression_l1',  # 回归问题
+            'metric': 'mae',  # 评价指标
+            'min_child_weight': 3,
+            'num_leaves': 2 ** 5,
+            'lambda_l2': 10,
+            'feature_fraction': 0.75,
+            'bagging_fraction': 0.75,
+            'bagging_freq': 10,
+            'learning_rate': 0.15,
+            'seed': 2022,
+            # 'max_depth': 10,
+            'verbose': -1,
+            'n_jobs': -1
+        }
         model = clf.train(
             params, train_set=train_matrix, num_boost_round=50000, valid_sets=[train_matrix, valid_matrix],
             categorical_feature=[], verbose_eval=3000, early_stopping_rounds=3000
@@ -162,7 +178,7 @@ def model(clf, train_x, train_y, test_x, clf_name, val_x, val_y):
 
         val_pred = model.predict(val_x)
         test_pred = model.predict(test_x)
-        # print("%s_score:" % clf_name, mean_absolute_error(val_y, val_pred))
+        print("%s_score:" % clf_name, mean_absolute_error(val_y, val_pred))
 
     return val_pred, test_pred
 
