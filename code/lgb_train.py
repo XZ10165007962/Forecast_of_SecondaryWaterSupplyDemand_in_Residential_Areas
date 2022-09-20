@@ -11,13 +11,13 @@ import pandas as pd
 import numpy as np
 import warnings
 from tqdm import tqdm
-import requests
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 
 import data
 import features
 import tree_model
 import conf
+from util import MSLE
 
 warnings.filterwarnings('ignore')
 # 显示所有列
@@ -47,8 +47,9 @@ if __name__ == '__main__':
         test_index = test_x.index + 1
         all_data_.loc[test_index, ["flow"]] = test_pred
         # 每一天输出一次损失
-        if (i != 0) and (i % 7 == 0):
+        if (i != 0) and (i % 24 == 0):
             err_data = all_data_[(all_data_["time_index"] >= time_index_+1) & (all_data_["time_index"] <= time_index+1)]
             print("测试集mae:", mean_absolute_error(err_data["flow"].values, err_data["flow_true"].values))
             print("测试集mse:", mean_squared_error(err_data["flow"].values, err_data["flow_true"].values))
+            print("测试集msle:", MSLE(err_data["flow"].values, err_data["flow_true"].values))
     all_data.to_csv(conf.tmp_data_paht + "pre_data.csv", index=False)

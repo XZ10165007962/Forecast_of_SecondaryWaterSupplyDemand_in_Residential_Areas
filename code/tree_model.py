@@ -140,14 +140,14 @@ def model(clf, train_x, train_y, test_x, clf_name, val_x, val_y):
         params = {
             'boosting_type': 'gbdt',
             'objective': 'regression_l1',  # 回归问题
-            'metric': 'mae',  # 评价指标
+            'metric': 'mse',  # 评价指标
             'min_child_weight': 3,
             'num_leaves': 2 ** 5,
             'lambda_l2': 10,
             'feature_fraction': 0.75,
             'bagging_fraction': 0.75,
             'bagging_freq': 10,
-            'learning_rate': 0.15,
+            'learning_rate': 0.05,
             'seed': 2022,
             # 'max_depth': 10,
             'verbose': -1,
