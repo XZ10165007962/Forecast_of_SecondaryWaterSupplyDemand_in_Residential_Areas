@@ -42,12 +42,12 @@ def get_features(all_data, lag=24, rolling=2):
 	features.append("flow_lag_25_49_mean")
 	# 计算统计特征
 	funcs = ["mean", "sum", "median", "max", "min", "std"]
-	simple = copy.deepcopy(all_data)
 	flag = 2
 	for func in funcs:
 		all_data[f"flow_id_{func}"] = all_data.groupby(["flow_id"])["flow"].transform(func)
 		features.append(f"flow_id_{func}")
 	for func in funcs:
+		simple = copy.deepcopy(all_data)
 		simple[f"month_{func}"] = simple.groupby(["month", "flow_id"])["flow"].transform(func)
 		simple[f"month_weekday_{func}"] = simple.groupby(["month", "is_weekday", "flow_id"])["flow"].transform(func)
 		for i in range(1, flag):
@@ -63,6 +63,7 @@ def get_features(all_data, lag=24, rolling=2):
 			all_data = all_data.merge(simple.loc[:, ["month", "is_weekday", "flow_id", f"month_weekday_{func}_{i}"]].drop_duplicates(),
 									  on=["month", "is_weekday", "flow_id"], how="left")
 	for func in funcs:
+		simple = copy.deepcopy(all_data)
 		simple[f"week_{func}"] = simple.groupby(["week", "flow_id"])["flow"].transform(func)
 		for i in range(1, flag):
 			simple.rename(
@@ -74,6 +75,7 @@ def get_features(all_data, lag=24, rolling=2):
 			all_data = all_data.merge(simple.loc[:, ["week", "flow_id", f"week_{func}_{i}"]].drop_duplicates(),
 									  on=["week", "flow_id"], how="left")
 	for func in funcs:
+		simple = copy.deepcopy(all_data)
 		simple[f"day_{func}"] = simple.groupby(["dayofyear", "flow_id"])["flow"].transform(func)
 		simple[f"day_free_{func}"] = simple.groupby(["dayofyear", "is_free", "flow_id"])["flow"].transform(func)
 		for i in range(1, flag):

@@ -30,8 +30,8 @@ pd.set_option('max_colwidth', 200)
 
 if __name__ == '__main__':
     print("获取数据")
-    # all_data_ = data.get_data()
-    all_data_ = pd.read_csv(conf.tmp_data_paht+"all_data.csv")
+    all_data_ = data.get_data()
+    # all_data_ = pd.read_csv(conf.tmp_data_paht+"all_data.csv")
     label = ["label"]
     time_index_ = 2160
     for i in range(24*7+1):

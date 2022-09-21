@@ -65,3 +65,8 @@ def data_cleaning(data_):
                 else:
                     pass
     return data_
+
+
+def out_liner(data_):
+    print("异常值处理")
+    data = data_

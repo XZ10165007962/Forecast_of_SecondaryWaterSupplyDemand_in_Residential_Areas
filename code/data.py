@@ -61,6 +61,7 @@ def get_data():
 			data["flow_id"] = flow
 			all_data = pd.concat([all_data, data], axis=0)
 	all_data["flow_true"] = all_data["flow"]
+	all_data.reset_index(drop=True,inplace=True)
 	all_data.to_csv(conf.tmp_data_paht+"all_data.csv", index=False)
 	return all_data
 
