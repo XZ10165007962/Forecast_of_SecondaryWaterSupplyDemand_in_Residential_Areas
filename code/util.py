@@ -70,3 +70,18 @@ def data_cleaning(data_):
 def out_liner(data_):
     print("异常值处理")
     data = data_
+    # 计算四分位数
+    Q1 = np.percentile(data["flow"], 25)
+    Q3 = np.percentile(data["flow"], 75)
+    # 计算IQR Interquartile range 四分位差
+    IQR = Q3 - Q1
+    # Outlier Step
+    outlier_step = 1.5 * IQR
+
+    # 判断离群点
+    outlier_index = data[(data["flow"] > Q3 + outlier_step) | (data["flow"] < Q1 - outlier_step)].index
+
+    # 计算一天前该点的index
+    replace_index = [i - 24 for i in outlier_index]
+    data.loc[outlier_index, ["flow"]] = data.loc[replace_index, ["flow"]].values
+    return data

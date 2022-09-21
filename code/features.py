@@ -42,7 +42,7 @@ def get_features(all_data, lag=24, rolling=2):
 	features.append("flow_lag_25_49_mean")
 	# 计算统计特征
 	funcs = ["mean", "sum", "median", "max", "min", "std"]
-	flag = 2
+	flag = 3
 	for func in funcs:
 		all_data[f"flow_id_{func}"] = all_data.groupby(["flow_id"])["flow"].transform(func)
 		features.append(f"flow_id_{func}")
@@ -51,10 +51,8 @@ def get_features(all_data, lag=24, rolling=2):
 		simple[f"month_{func}"] = simple.groupby(["month", "flow_id"])["flow"].transform(func)
 		simple[f"month_weekday_{func}"] = simple.groupby(["month", "is_weekday", "flow_id"])["flow"].transform(func)
 		for i in range(1, flag):
-			simple.rename(
-				columns={f"month_{func}":f"month_{func}_{i}", f"month_weekday_{func}":f"month_weekday_{func}_{i}"},
-				inplace=True
-			)
+			simple[f"month_{func}_{i}"] = simple[f"month_{func}"]
+			simple[f"month_weekday_{func}_{i}"] = simple[f"month_weekday_{func}"]
 			features.append(f"month_{func}_{i}")
 			features.append(f"month_weekday_{func}_{i}")
 			simple["month"] = list(map(lambda x: x+i, simple["month"]))
@@ -66,10 +64,7 @@ def get_features(all_data, lag=24, rolling=2):
 		simple = copy.deepcopy(all_data)
 		simple[f"week_{func}"] = simple.groupby(["week", "flow_id"])["flow"].transform(func)
 		for i in range(1, flag):
-			simple.rename(
-				columns={f"week_{func}": f"week_{func}_{i}"},
-				inplace=True
-			)
+			simple[f"week_{func}_{i}"] = simple[f"week_{func}"]
 			features.append(f"week_{func}_{i}")
 			simple["week"] = list(map(lambda x: x+i, simple["week"]))
 			all_data = all_data.merge(simple.loc[:, ["week", "flow_id", f"week_{func}_{i}"]].drop_duplicates(),
@@ -79,10 +74,8 @@ def get_features(all_data, lag=24, rolling=2):
 		simple[f"day_{func}"] = simple.groupby(["dayofyear", "flow_id"])["flow"].transform(func)
 		simple[f"day_free_{func}"] = simple.groupby(["dayofyear", "is_free", "flow_id"])["flow"].transform(func)
 		for i in range(1, flag):
-			simple.rename(
-				columns={f"day_{func}": f"day_{func}_{i}", f"day_free_{func}": f"day_free_{func}_{i}"},
-				inplace=True
-			)
+			simple[f"day_{func}_{i}"] = simple[f"day_{func}"]
+			simple[f"day_free_{func}_{i}"] = simple[f"day_free_{func}"]
 			features.append(f"day_{func}_{i}")
 			features.append(f"day_free_{func}_{i}")
 			simple["dayofyear"] = list(map(lambda x: x+i, simple["dayofyear"]))
@@ -90,6 +83,9 @@ def get_features(all_data, lag=24, rolling=2):
 									  on=["dayofyear", "flow_id"], how="left")
 			all_data = all_data.merge(simple.loc[:, ["dayofyear", "is_free", "flow_id", f"day_free_{func}_{i}"]].drop_duplicates(),
 									  on=["dayofyear", "is_free", "flow_id"], how="left")
+	all_data["gap"] = all_data["day_mean_1"] / all_data["day_mean_2"]
+	all_data["feat"] = all_data["flow_lag_25"] * all_data["gap"]
+	features.extend(["gap", "feat"])
 	all_data["label"] = all_data.groupby(["flow_id"])["flow"].shift(-1)
 	return all_data, features
 

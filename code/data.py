@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler
 
 import conf
-from util import data_cleaning
+from util import data_cleaning, out_liner
 
 # 设置value的显示长度为200，默认为50
 pd.set_option('max_colwidth', 200)
@@ -38,6 +38,7 @@ test4 开始 2022-08-21 01:00:00 5573  结束 2022-08-28 00:00:00  5736
 
 
 def get_data():
+	out_num = 1
 	data_ = pd.read_csv(conf.train_data_path + "hourly_dataset.csv")
 	data_["time_index"] = np.arange(1, data_.shape[0] + 1)
 	flow_id = [
@@ -49,18 +50,23 @@ def get_data():
 		print(f"=============={flow}==============")
 		if i == 0:
 			data = data_.loc[:, ["time", "time_index", flow, "train or test"]].rename(columns={flow: "flow"})
+			data["flow_true"] = data["flow"]
 			data = data_cleaning(data)
+			# for _ in range(out_num):
+			# 	data = out_liner(data)
 			data["flow_id"] = flow
 			all_data = data
 		else:
 			data = data_.loc[:, ["time", "time_index", flow, "train or test"]].rename(columns={flow: "flow"})
+			data["flow_true"] = data["flow"]
 			# 某些数据单独填充
 			if flow == "flow_19":
 				data.loc[[2,3,4,5,6], ["flow"]] = [0.922571378,0.774033298,0.387016649,0.65820085,1.105177825]
 			data = data_cleaning(data)
+			# for _ in range(out_num):
+			# 	data = out_liner(data)
 			data["flow_id"] = flow
 			all_data = pd.concat([all_data, data], axis=0)
-	all_data["flow_true"] = all_data["flow"]
 	all_data.reset_index(drop=True,inplace=True)
 	all_data.to_csv(conf.tmp_data_paht+"all_data.csv", index=False)
 	return all_data

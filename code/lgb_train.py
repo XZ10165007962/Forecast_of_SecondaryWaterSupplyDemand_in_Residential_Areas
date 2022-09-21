@@ -30,8 +30,8 @@ pd.set_option('max_colwidth', 200)
 
 if __name__ == '__main__':
     print("获取数据")
-    all_data_ = data.get_data()
-    # all_data_ = pd.read_csv(conf.tmp_data_paht+"all_data.csv")
+    # all_data_ = data.get_data()
+    all_data_ = pd.read_csv(conf.tmp_data_paht+"all_data.csv")
     label = ["label"]
     time_index_ = 2160
     for i in range(24*7+1):
@@ -39,8 +39,8 @@ if __name__ == '__main__':
         time_index = time_index_ + i
         all_data = all_data_[all_data_["time_index"] <= time_index]
         all_data, feature = features.get_features(all_data)
-        # if i == 0:
-        #     all_data.to_csv(conf.tmp_data_paht+"feature_data.csv", index=False)
+        if i == 0:
+            all_data.to_csv(conf.tmp_data_paht+"feature_data.csv", index=False)
         train_x, train_y, val_x, val_y, test_x, test_y = data.split_data(all_data, "time_index", time_index, "label", feature)
         val_pred, test_pred = tree_model.lgb_model(train_x, train_y, test_x, val_x, val_y)
         # 将预测数据拼接回原始数据
