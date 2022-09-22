@@ -33,18 +33,21 @@ if __name__ == '__main__':
     # all_data_ = data.get_data()
     all_data_ = pd.read_csv(conf.tmp_data_paht+"all_data.csv")
     label = ["label"]
-    time_index_ = 2160
+    time_index_ = 2159
     for i in range(24*7+1):
         print(f"=================={i}=====================")
         time_index = time_index_ + i
         all_data = all_data_[all_data_["time_index"] <= time_index]
         all_data, feature = features.get_features(all_data)
-        if i == 0:
-            all_data.to_csv(conf.tmp_data_paht+"feature_data.csv", index=False)
+        test_index = all_data_[all_data_["time_index"] == time_index]
+        test_index = test_index.index + 1
+        # if i == 0:
+        #     all_data.to_csv(conf.tmp_data_paht+"feature_data.csv", index=False)
         train_x, train_y, val_x, val_y, test_x, test_y = data.split_data(all_data, "time_index", time_index, "label", feature)
         val_pred, test_pred = tree_model.lgb_model(train_x, train_y, test_x, val_x, val_y)
         # 将预测数据拼接回原始数据
-        test_index = test_x.index + 1
+        test_index = all_data_[all_data_["time_index"] == time_index]
+        test_index = test_index.index + 1
         all_data_.loc[test_index, ["flow"]] = test_pred
         # 每一天输出一次损失
         if (i != 0) and (i % 24 == 0):

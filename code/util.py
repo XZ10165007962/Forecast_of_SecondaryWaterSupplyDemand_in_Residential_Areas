@@ -30,7 +30,7 @@ def MSLE(y, y_hut):
 
 def data_cleaning(data_):
     print("数据清洗")
-    data = data_
+    data = data_[data_["train or test"] == "train"]
     nan_list = []
 
     def tef():

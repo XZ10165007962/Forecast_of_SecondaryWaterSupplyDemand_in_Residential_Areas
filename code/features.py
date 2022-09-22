@@ -24,6 +24,7 @@ pd.set_option('max_colwidth', 200)
 
 
 def get_features(all_data, lag=24, rolling=2):
+	print("特征生成")
 	features = []
 	all_data, time_feature = time_features(all_data)
 	features.extend(time_feature)
@@ -85,7 +86,7 @@ def get_features(all_data, lag=24, rolling=2):
 									  on=["dayofyear", "is_free", "flow_id"], how="left")
 	all_data["gap"] = all_data["day_mean_1"] / all_data["day_mean_2"]
 	all_data["feat"] = all_data["flow_lag_25"] * all_data["gap"]
-	features.extend(["gap", "feat"])
+	features.extend(["feat"])
 	all_data["label"] = all_data.groupby(["flow_id"])["flow"].shift(-1)
 	return all_data, features
 

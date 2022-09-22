@@ -27,18 +27,17 @@ pd.set_option('display.max_rows', None)
 """
 整个数据 2022-01-01 01:00:00 开始
 训练集划分为
-test1 开始 2022-04-01 01:00:00 2161  结束 2022-04-08 00:00:00  2328
+test1 开始 2022-04-01 01:00:00 2160  结束 2022-04-08 00:00:00  2328
 """
 """
-test1 开始 2022-05-01 01:00:00 2885  结束 2022-05-08 00:00:00  3048
-test2 开始 2022-06-01 01:00:00 3629  结束 2022-06-08 00:00:00  3792
-test3 开始 2022-07-21 01:00:00 4829  结束 2022-07-28 00:00:00  4992
-test4 开始 2022-08-21 01:00:00 5573  结束 2022-08-28 00:00:00  5736
+test1 开始 2022-05-01 01:00:00 2881  结束 2022-05-08 00:00:00  3048
+test2 开始 2022-06-01 01:00:00 3625  结束 2022-06-08 00:00:00  3792
+test3 开始 2022-07-21 01:00:00 4825  结束 2022-07-28 00:00:00  4992
+test4 开始 2022-08-21 01:00:00 5569  结束 2022-08-28 00:00:00  5736
 """
 
 
-def get_data():
-	out_num = 1
+def all_data():
 	data_ = pd.read_csv(conf.train_data_path + "hourly_dataset.csv")
 	data_["time_index"] = np.arange(1, data_.shape[0] + 1)
 	flow_id = [
@@ -47,28 +46,43 @@ def get_data():
 	]
 	all_data = pd.DataFrame()
 	for i, flow in enumerate(flow_id):
-		print(f"=============={flow}==============")
 		if i == 0:
 			data = data_.loc[:, ["time", "time_index", flow, "train or test"]].rename(columns={flow: "flow"})
-			data["flow_true"] = data["flow"]
-			data = data_cleaning(data)
-			# for _ in range(out_num):
-			# 	data = out_liner(data)
 			data["flow_id"] = flow
 			all_data = data
 		else:
 			data = data_.loc[:, ["time", "time_index", flow, "train or test"]].rename(columns={flow: "flow"})
-			data["flow_true"] = data["flow"]
-			# 某些数据单独填充
-			if flow == "flow_19":
-				data.loc[[2,3,4,5,6], ["flow"]] = [0.922571378,0.774033298,0.387016649,0.65820085,1.105177825]
-			data = data_cleaning(data)
-			# for _ in range(out_num):
-			# 	data = out_liner(data)
 			data["flow_id"] = flow
 			all_data = pd.concat([all_data, data], axis=0)
 	all_data.reset_index(drop=True,inplace=True)
-	all_data.to_csv(conf.tmp_data_paht+"all_data.csv", index=False)
+	return all_data
+
+
+def get_data(data_, time_index):
+	data_ = data_[data_["time_index"] <= time_index]
+	flow_id = [
+		"flow_1", "flow_2", "flow_3", "flow_4", "flow_5", "flow_6", "flow_7", "flow_8", "flow_9", "flow_10", "flow_11",
+		"flow_12", "flow_13", "flow_14", "flow_15", "flow_16", "flow_17", "flow_18", "flow_19", "flow_20"
+	]
+	all_data = pd.DataFrame()
+	for i, flow in enumerate(flow_id):
+		print(f"=============={flow}==============")
+		if i == 0:
+			data = data_[data_["flow_id"] == flow].reset_index(drop=True)
+			data = data.loc[:, ["time", "time_index", "flow", "train or test", "flow_id"]]
+			data = data_cleaning(data)
+			all_data = data
+		else:
+			data = data_[data_["flow_id"] == flow].reset_index(drop=True)
+			data = data.loc[:, ["time", "time_index", "flow", "train or test", "flow_id"]]
+			if flow == "flow_19":
+				data.loc[[2, 3, 4, 5, 6], ["flow"]] = [0.922571378, 0.774033298, 0.387016649, 0.65820085, 1.105177825]
+			elif flow == "flow_18":
+				data.loc[[0, 1, 2, 3, 4, 5], ["flow"]] = [2.902, 2.269, 1.055, 0.677, 0.891, 1.572]
+			data = data_cleaning(data)
+			all_data = pd.concat([all_data, data], axis=0)
+	all_data.reset_index(drop=True,inplace=True)
+	all_data["flow_true"] = all_data["flow"]
 	return all_data
 
 
@@ -86,4 +100,7 @@ def split_data(data_, split_col, split_flag, label_col, feature_col):
 
 
 if __name__ == '__main__':
-    get_data()
+	all_data = all_data()
+	all_data = get_data(all_data, 2880)
+	print(all_data.head())
+	# all_data.to_csv(conf.tmp_data_paht + "all_data.csv", index=False)
