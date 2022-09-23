@@ -66,7 +66,6 @@ def get_data(data_, time_index):
 	]
 	all_data = pd.DataFrame()
 	for i, flow in enumerate(flow_id):
-		print(f"=============={flow}==============")
 		if i == 0:
 			data = data_[data_["flow_id"] == flow].reset_index(drop=True)
 			data = data.loc[:, ["time", "time_index", "flow", "train or test", "flow_id"]]
@@ -102,5 +101,4 @@ def split_data(data_, split_col, split_flag, label_col, feature_col):
 if __name__ == '__main__':
 	all_data = all_data()
 	all_data = get_data(all_data, 2880)
-	print(all_data.head())
-	# all_data.to_csv(conf.tmp_data_paht + "all_data.csv", index=False)
+	all_data.to_csv(conf.tmp_data_paht + "all_data.csv", index=False)
