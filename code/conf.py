@@ -10,5 +10,5 @@
 
 train_data_path = "../data/use_data/training_dataset/"
 test_data_path = "../data/use_data/"
-predict_data_path = "../predictmp_datation_result/"
+predict_data_path = "../prediction_result/"
 tmp_data_paht = "../data/tmp_data/"
