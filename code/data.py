@@ -37,7 +37,7 @@ test4 开始 2022-08-21 01:00:00 5569  结束 2022-08-28 00:00:00  5736
 """
 
 
-def all_data():
+def get_all_data():
 	data_ = pd.read_csv(conf.train_data_path + "hourly_dataset.csv")
 	data_["time_index"] = np.arange(1, data_.shape[0] + 1)
 	flow_id = [
@@ -46,33 +46,33 @@ def all_data():
 	]
 	all_data = pd.DataFrame()
 	for i, flow in enumerate(flow_id):
-		print(f"==============={flow}=================")
 		if i == 0:
 			data = data_.loc[:, ["time", "time_index", flow, "train or test"]].rename(columns={flow: "flow"})
 			data["flow_id"] = flow
-			print(data[data["flow"] <= 0])
 			all_data = data
 		else:
 			data = data_.loc[:, ["time", "time_index", flow, "train or test"]].rename(columns={flow: "flow"})
 			data["flow_id"] = flow
-			print(data[data["flow"] <= 0])
 			all_data = pd.concat([all_data, data], axis=0)
-	all_data.reset_index(drop=True,inplace=True)
+	all_data.reset_index(drop=True, inplace=True)
 	return all_data
 
 
-def get_data(data_, time_index):
-	data_ = data_[data_["time_index"] <= time_index]
+def get_data():
+	data_ = get_all_data()
+	print(data_.shape)
 	flow_id = [
 		"flow_1", "flow_2", "flow_3", "flow_4", "flow_5", "flow_6", "flow_7", "flow_8", "flow_9", "flow_10", "flow_11",
 		"flow_12", "flow_13", "flow_14", "flow_15", "flow_16", "flow_17", "flow_18", "flow_19", "flow_20"
 	]
 	all_data = pd.DataFrame()
 	for i, flow in enumerate(flow_id):
+		print(f"========={flow}===========")
 		if i == 0:
 			data = data_[data_["flow_id"] == flow].reset_index(drop=True)
 			data = data.loc[:, ["time", "time_index", "flow", "train or test", "flow_id"]]
 			data = data_cleaning(data)
+			data = out_liner(data)
 			all_data = data
 		else:
 			data = data_[data_["flow_id"] == flow].reset_index(drop=True)
@@ -112,6 +112,9 @@ def get_data(data_, time_index):
 				# 24.159 / 22.04
 				data.loc[[3797, 3798, 3799], ["flow"]] = [
 					4.459 / (24.159 / 22.04), 9.548 / (24.159 / 22.04), 10.152 / (24.159 / 22.04)]
+				#  9.116 / 9.257
+				data.loc[[3071, 3072, 3073], ["flow"]] = [
+					5.6 / (9.116 / 9.257), 2.416 / (9.116 / 9.257), 1.1 / (9.116 / 9.257)]
 				# 15.224 / 15.648
 				data.loc[[3801, 3802, 3803], ["flow"]] = [
 					5.288 / (15.224 / 15.648), 4.936 / (15.224 / 15.648), 5 / (15.224 / 15.648)]
@@ -126,11 +129,8 @@ def get_data(data_, time_index):
 				# 3.175 / 5.84
 				data.loc[[3061, 3062, 3063], ["flow"]] = [0.879 / (3.175 / 5.84), 1.176 / (3.175 / 5.84),
 														  1.12 / (3.175 / 5.84)]
-				# 3.175 / 5.84
-				data.loc[[3061, 3062, 3063], ["flow"]] = [0.879 / (3.175 / 5.84), 1.176 / (3.175 / 5.84),
-														  1.12 / (3.175 / 5.84)]
 				# 24.748 / 24.161
-				data.loc[[3797, 3798, 3799, 3780, 3781, 3782, 3783, 3784, 3785], ["flow"]] = [
+				data.loc[[3797, 3798, 3799, 3800, 3801, 3802, 3803, 3804, 3805], ["flow"]] = [
 					2.5 / (24.748 / 24.161), 4.694 / (24.748 / 24.161), 4.24 / (24.748 / 24.161)
 				, 2.846 / (24.748 / 24.161), 2.838 / (24.748 / 24.161), 2.822 / (24.748 / 24.161)
 				, 2.568 / (24.748 / 24.161), 1.448 / (24.748 / 24.161), 0.792 / (24.748 / 24.161)]
@@ -166,6 +166,19 @@ def get_data(data_, time_index):
 				data.loc[[3811, 3812, 3813, 3814, 3815], ["flow"]] = [
 					5.54 / (40.37 / 34.9), 8.864 / (40.37 / 34.9), 9.416 / (40.37 / 34.9),
 					6.828 / (40.37 / 34.9), 9.722 / (40.37 / 34.9)]
+				# 33.76 / 31.104
+				data.loc[[3857, 3858, 3859, 3860, 3861, 3862, 3863], ["flow"]] = [
+					2.932 / (33.76 / 31.104), 4.116 / (33.76 / 31.104), 5.54 / (33.76 / 31.104),
+					8.864 / (33.76 / 31.104), 9.416 / (33.76 / 31.104), 6.828 / (33.76 / 31.104),
+					9.722 / (33.76 / 31.104)
+				]
+				linshi = [3864, 3865, 3866, 3867, 3868, 3869, 3870, 3871, 3872, 3873, 3874, 3875, 3876, 3877, 3878, 3879, 3880, 3881, 3882, 3883, 3884, 3885, 3886, 3887, 3888]
+				linshi1 = [3840, 3841, 3842, 3843, 3844, 3845, 3846, 3847, 3848, 3849, 3850, 3851, 3852, 3853, 3854, 3855, 3856, 3857, 3858, 3859, 3860, 3861, 3862, 3863, 3864]
+				data.loc[linshi, ["flow"]] = data.loc[linshi1, ["flow"]]
+				data.loc[[3888], ["flow"]] = (376.938 - 2.932 / (33.76 / 31.104)- 4.116 / (33.76 / 31.104)- 5.54 / (33.76 / 31.104)-
+					8.864 / (33.76 / 31.104)- 9.416 / (33.76 / 31.104)- 6.828 / (33.76 / 31.104)-
+					9.722 / (33.76 / 31.104))
+				data.loc[[3888], ["flow"]] = data.loc[[3888], ["flow"]].values - data.loc[linshi, ["flow"]].sum().values
 			elif flow == "flow_8":
 				# 28.1 / 37.6
 				data.loc[[4992, 4993, 4994, 4995, 4996, 4997, 4998, 4999, 5000, 5001, 5002, 5003], ["flow"]] = [
@@ -182,18 +195,15 @@ def get_data(data_, time_index):
 					0.3,1.4,3.1,3.1,3.1,2.4,2.5,2.4,1.9,1.3,1.6,1.9,2.7,3.4,3.6,4.9,6.9,7.5,7.2,3.7,1.4,0.8,0.2,0.6,0.8,
 					1.9,3.6,3.3,2.6,2.4,2.2,2.3,1.2,1.5,0.9,1.2,1.8,2.7,3.5,5,7.3,8,6.5,3
 				]
-				index = [4992+i for i in range(1, len(a)+1)]
-				data.loc[index, ["flow"]] = [
-					1.7,0.5,0.4,0.4,0.4,2,4,4.3,3.2,2.8,2.7,2.7,1.7,1.5,1.4,1.8,1.9,2.9,3.3,5.2,7.2,8.9,6.3,3.8,1,0.6,
-					0.2,0.2,0.4,1.6,3.3,4.1,3.1,2.5,3,2.7,1.8,1.3,1.2,1,1.5,2.2,3.9,6,7.8,8.4,6.2,3.7,0.7,0.3,0.4,0.2,
-					0.3,1.4,3.1,3.1,3.1,2.4,2.5,2.4,1.9,1.3,1.6,1.9,2.7,3.4,3.6,4.9,6.9,7.5,7.2,3.7,1.4,0.8,0.2,0.6,0.8,
-					1.9,3.6,3.3,2.6,2.4,2.2,2.3,1.2,1.5,0.9,1.2,1.8,2.7,3.5,5,7.3,8,6.5,3
-				]
+				index = [4992+i for i in range(len(a))]
+				data.loc[index, ["flow"]] = a
 
 			data = data_cleaning(data)
+			data = out_liner(data)
 			all_data = pd.concat([all_data, data], axis=0)
 	all_data.reset_index(drop=True, inplace=True)
 	all_data["pre"] = 0
+	print(all_data.shape)
 	return all_data
 
 
@@ -211,6 +221,6 @@ def split_data(data_, split_col, split_flag, label_col, feature_col):
 
 
 if __name__ == '__main__':
-	all_data = all_data()
-	# all_data = get_data(all_data, 2880)
+	# all_data = all_data()
+	all_data = get_data()
 	all_data.to_csv(conf.tmp_data_paht + "all_data.csv", index=False)
