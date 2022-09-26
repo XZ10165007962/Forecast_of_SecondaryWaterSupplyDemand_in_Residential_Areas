@@ -11,8 +11,6 @@
 # -------------------------------------------------------------------------------
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-from sklearn.preprocessing import StandardScaler
 
 import conf
 from util import data_cleaning, out_liner
@@ -219,8 +217,28 @@ def split_data(data_, split_col, split_flag, label_col, feature_col):
 	test_y = test_data.loc[:, [label_col]]
 	return train_x, train_y, val_x, val_y, test_x, test_y
 
-
+def get_result():
+	all_data = pd.read_csv(conf.predict_data_path + "sub_all.csv")
+	all_data = all_data[all_data["train or test"] != "train"]
+	flow_id = [
+		"flow_1", "flow_2", "flow_3", "flow_4", "flow_5", "flow_6", "flow_7", "flow_8", "flow_9", "flow_10", "flow_11",
+		"flow_12", "flow_13", "flow_14", "flow_15", "flow_16", "flow_17", "flow_18", "flow_19", "flow_20"
+	]
+	sub = pd.DataFrame()
+	for i, flow in enumerate(flow_id):
+		temp = all_data[all_data["flow_id"] == flow].reset_index(drop=True)
+		if i == 0:
+			sub = temp.loc[:, ["time", "flow"]]
+		else:
+			sub = pd.concat([sub, temp.loc[:, ["flow"]]], axis=1)
+	sub.columns = ["time",
+				   "flow_1", "flow_2", "flow_3", "flow_4", "flow_5", "flow_6", "flow_7", "flow_8", "flow_9", "flow_10",
+				   "flow_11",
+				   "flow_12", "flow_13", "flow_14", "flow_15", "flow_16", "flow_17", "flow_18", "flow_19", "flow_20"
+				   ]
+	sub.to_csv(conf.predict_data_path + "sub.csv", index=False)
 if __name__ == '__main__':
 	# all_data = all_data()
-	all_data = get_data()
-	all_data.to_csv(conf.tmp_data_paht + "all_data.csv", index=False)
+	# all_data = get_data()
+	# all_data.to_csv(conf.tmp_data_paht + "all_data.csv", index=False)
+	get_result()

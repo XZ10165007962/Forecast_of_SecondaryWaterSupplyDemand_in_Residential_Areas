@@ -115,7 +115,7 @@ def cv_model(clf, train_x, train_y, test_x, clf_name):
     return train, test
 
 
-def model(clf, train_x, train_y, test_x, clf_name, val_x, val_y):
+def model(clf, train_x, train_y, test_x, clf_name, val_x, val_y, cats):
 
     if clf_name == 'lgb':
         train_matrix = clf.Dataset(train_x, label=train_y)
@@ -140,14 +140,14 @@ def model(clf, train_x, train_y, test_x, clf_name, val_x, val_y):
         params = {
             'boosting_type': 'gbdt',
             'objective': 'regression_l1',  # 回归问题
-            'metric': 'mse',  # 评价指标
+            'metric': 'mae',  # 评价指标
             'min_child_weight': 3,
             'num_leaves': 2 ** 5,
             'lambda_l2': 10,
             'feature_fraction': 0.75,
             'bagging_fraction': 0.75,
             'bagging_freq': 10,
-            'learning_rate': 0.05,
+            'learning_rate': 0.01,
             'seed': 2022,
             # 'max_depth': 10,
             'verbose': -1,
@@ -155,7 +155,7 @@ def model(clf, train_x, train_y, test_x, clf_name, val_x, val_y):
         }
         model = clf.train(
             params, train_set=train_matrix, num_boost_round=50000, valid_sets=[train_matrix, valid_matrix],
-            categorical_feature=[], verbose_eval=3000, early_stopping_rounds=3000
+            categorical_feature=cats, verbose_eval=3000, early_stopping_rounds=3000
         )
         val_pred = model.predict(data=val_x, num_iteration=model.best_iteration)
         test_pred = model.predict(data=test_x, num_iteration=model.best_iteration)
@@ -185,7 +185,7 @@ def model(clf, train_x, train_y, test_x, clf_name, val_x, val_y):
 
 def lgb_model(x_train, y_train, x_test, *args):
     if args is not None:
-        lgb_train, lgb_test = model(lgb, x_train, y_train, x_test, 'lgb', args[0], args[1])
+        lgb_train, lgb_test = model(lgb, x_train, y_train, x_test, 'lgb', args[0], args[1], args[2])
     else:
         lgb_train, lgb_test = cv_model(lgb, x_train, y_train, x_test, 'lgb')
     return lgb_train, lgb_test

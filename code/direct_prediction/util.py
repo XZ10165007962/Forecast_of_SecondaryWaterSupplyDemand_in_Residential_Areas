@@ -41,9 +41,8 @@ def data_cleaning(data_):
         if min(nan_list) < 0 or min(temp_index) < 0:
             pass
         else:
-            print(data.loc[nan_list, :])
-            temp1 = data.loc[nan_list, ["flow"]].sum()
-            temp2 = data.loc[temp_index, ["flow"]].sum()
+            temp1 = data_.loc[nan_list, ["flow"]].sum()
+            temp2 = data_.loc[temp_index, ["flow"]].sum()
             scale = temp1 / temp2
             data_.loc[nan_list, ["flow"]] = (data_.loc[temp_index, ["flow"]] * scale).values
 
@@ -59,9 +58,11 @@ def data_cleaning(data_):
             if data.loc[ind - 1, ["flow"]].isna().values:
                 nan_list.append(ind - 1)
                 tef()
+                nan_list = []
             elif ~data.loc[ind - 1, ["flow"]].isna().values:
                 if nan_list:
                     tef()
+                    nan_list = []
                 else:
                     pass
     return data_
