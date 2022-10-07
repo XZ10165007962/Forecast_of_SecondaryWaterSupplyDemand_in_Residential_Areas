@@ -32,27 +32,27 @@ if __name__ == '__main__':
     print("获取数据")
     # all_data_ = data.get_data()
     all_data_ = pd.read_csv(conf.tmp_data_paht+"all_data.csv")
-    label = ["label"]
-    time_index_ = 2159
-    for i in range(24*7+1):
+    label = ["flow"]
+    time_index_ = 194
+    for i in range(7):
         print(f"=================={i}=====================")
         time_index = time_index_ + i
-        all_data = all_data_[all_data_["time_index"] <= time_index]
+        all_data = all_data_[all_data_["dayofyear"] <= time_index]
         all_data, feature = features.get_features(all_data)
-        test_index = all_data_[all_data_["time_index"] == time_index]
-        test_index = test_index.index + 1
         # if i == 0:
         #     all_data.to_csv(conf.tmp_data_paht+"feature_data.csv", index=False)
-        train_x, train_y, val_x, val_y, test_x, test_y = data.split_data(all_data, "time_index", time_index, "label", feature)
+        train_x, train_y, val_x, val_y, test_x, test_y = data.split_data(all_data, "dayofyear", time_index, "flow", feature)
         val_pred, test_pred = tree_model.lgb_model(train_x, train_y, test_x, val_x, val_y)
         # 将预测数据拼接回原始数据
-        test_index = all_data_[all_data_["time_index"] == time_index]
-        test_index = test_index.index + 1
+        test_index = all_data_[all_data_["dayofyear"] == time_index]
+        test_index = test_index.index
         all_data_.loc[test_index, ["flow"]] = test_pred
         # 每一天输出一次损失
-        if (i != 0) and (i % 24 == 0):
-            err_data = all_data_[(all_data_["time_index"] >= time_index_+1) & (all_data_["time_index"] <= time_index+1)]
-            print("测试集mae:", mean_absolute_error(err_data["flow"].values, err_data["flow_true"].values))
-            print("测试集mse:", mean_squared_error(err_data["flow"].values, err_data["flow_true"].values))
-            print("测试集msle:", MSLE(err_data["flow"].values, err_data["flow_true"].values))
-    all_data.to_csv(conf.tmp_data_paht + "pre_data.csv", index=False)
+        if i == 0:
+            err_data = all_data_[all_data_["dayofyear"] == time_index]
+        else:
+            err_data = all_data_[(all_data_["dayofyear"] > time_index_) & (all_data_["dayofyear"] <= time_index)]
+        print("测试集mae:", mean_absolute_error(err_data["flow"].values, err_data["flow_true"].values))
+        print("测试集mse:", mean_squared_error(err_data["flow"].values, err_data["flow_true"].values))
+        print("测试集msle:", MSLE(err_data["flow"].values, err_data["flow_true"].values, flag=1))
+    all_data_.to_csv(conf.tmp_data_paht + "pre_data.csv", index=False)

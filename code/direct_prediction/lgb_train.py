@@ -7,6 +7,9 @@
 @version:
 @desc: 
 """
+import math
+
+import numpy as np
 import pandas as pd
 import warnings
 from sklearn.metrics import mean_absolute_error, mean_squared_error
@@ -47,7 +50,15 @@ if __name__ == '__main__':
     test_y = test_data.loc[:, label]
     val_pred, test_pred = tree_model.lgb_model(train_x, train_y, test_x, val_x, val_y, cat)
     all_data.loc[test_x.index, ["pre"]] = test_pred
-    print("测试集mae:", mean_absolute_error(test_y.values, test_pred))
-    print("测试集mse:", mean_squared_error(test_y.values, test_pred))
-    print("测试集msle:", MSLE(test_y.values, test_pred))
+    err_data_ = all_data.loc[test_x.index, :]
+    for id in [
+		"flow_1", "flow_2", "flow_3", "flow_4", "flow_5", "flow_6", "flow_7", "flow_8", "flow_9", "flow_10", "flow_11",
+		"flow_12", "flow_13", "flow_14", "flow_15", "flow_16", "flow_17", "flow_18", "flow_19", "flow_20"
+	]:
+        print(f"======={id}============")
+        err_data = err_data_[err_data_["flow_id"] == id]
+        print("测试集mae:", mean_absolute_error(err_data.loc[:, ["pre"]].values, err_data.loc[:, ["flow"]].values))
+        print("测试集mse:", mean_squared_error(err_data.loc[:, ["pre"]].values, err_data.loc[:, ["flow"]].values))
+        print("测试集msle:", MSLE(err_data.loc[:, ["pre"]].values, err_data.loc[:, ["flow"]].values))
+    print("测试集msle:", MSLE(err_data_.loc[:, ["pre"]].values, err_data_.loc[:, ["flow"]].values, 1))
     all_data.to_csv(conf.tmp_data_paht + "pre_data.csv", index=False)

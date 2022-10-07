@@ -25,7 +25,7 @@ pd.set_option('display.max_rows', None)
 pd.set_option('max_colwidth', 200)
 
 
-def get_features(all_data, lag=24, rolling=3):
+def get_features(all_data, lag=36, rolling=3):
 	print("特征生成")
 	features = []
 	all_data, time_feature = time_features(all_data)
@@ -36,8 +36,10 @@ def get_features(all_data, lag=24, rolling=3):
 		features.append(f"flow_lag_{i}")
 		all_data[f"flow_lag_{i}_roll"] = all_data.groupby(["flow_id"])["flow"].shift(j).rolling(rolling).mean()
 		features.append(f"flow_lag_{i}_roll")
-		all_data[f"flow_lag_{i}_diff"] = all_data.groupby(["flow_id"])["flow"].shift(j).diff()
-		features.append(f"flow_lag_{i}_diff")
+		# all_data[f"flow_lag_{i}_diff"] = all_data.groupby(["flow_id"])["flow"].shift(j).diff()
+		# features.append(f"flow_lag_{i}_diff")
+		# all_data[f"flow_lag_{i}_diff_lag"] = all_data[f"flow_lag_{i}"] + all_data[f"flow_lag_{i}_diff"]
+		# features.append(f"flow_lag_{i}_diff_lag")
 
 	# 计算统计特征
 	funcs = ["mean", "sum", "median", "max", "min", "std"]
@@ -81,10 +83,9 @@ def get_features(all_data, lag=24, rolling=3):
 				on=["week", "is_weekday", "flow_id"], how="left")
 	all_data["week_gep"] = all_data["week_mean_1"] / all_data["week_mean_2"]
 	all_data["month_gep"] = all_data["month_mean_1"] / all_data["month_mean_2"]
-	all_data["month_gep_pre"] = all_data["week_gep"] * all_data["flow_lag_0"]
-	all_data["month_gep+pre"] = all_data["month_gep"] * all_data["flow_lag_0"]
-	features.extend(["week_gep", "month_gep", "month_gep_pre", "month_gep+pre"])
-
+	all_data["week_gep_pre"] = all_data["week_gep"] * all_data["flow_lag_0"]
+	all_data["month_gep_pre"] = all_data["month_gep"] * all_data["flow_lag_0"]
+	features.extend(["week_gep", "month_gep", "week_gep_pre", "month_gep_pre"])
 	cats = ["is_weekday", "is_free"]
 	for cat in cats:
 		all_data[cat] = all_data[cat].astype('category')
@@ -100,6 +101,8 @@ def time_features(data_):
 	data_["dayofweek"] = data_["time"].dt.dayofweek
 	data_["dayofyear"] = data_["time"].dt.dayofyear
 	data_["hour"] = data_["time"].dt.hour
+	data_['sin_hour'] = np.sin(2 * np.pi * data_["hour"] / 24)
+	data_['cos_hour'] = np.cos(2 * np.pi * data_["hour"] / 24)
 	data_["is_weekday"] = list(map(lambda x: 1 if x >= 5 else 0, data_["dayofweek"]))
 	data_["is_free"] = list(map(lambda x: 1 if x >= 7 and x <= 23 else 0, data_["hour"]))
 	features = ["month", "day", "dayofweek", "hour", "is_weekday", "is_free"]
@@ -108,5 +111,9 @@ def time_features(data_):
 
 if __name__ == '__main__':
 	all_data_ = pd.read_csv(conf.tmp_data_paht + "all_data.csv")
-	data, features = get_features(all_data_)
+	data, features, _ = get_features(all_data_)
+	data.dropna(inplace=True)
+	print(data.loc[83126, :])
 	data.to_csv(conf.tmp_data_paht + "feature_data.csv", index=False)
+	# all_data_ = pd.read_csv(conf.tmp_data_paht + "feature_data.csv")
+	# print(all_data_.corr())

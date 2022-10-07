@@ -147,7 +147,7 @@ def model(clf, train_x, train_y, test_x, clf_name, val_x, val_y):
             'feature_fraction': 0.75,
             'bagging_fraction': 0.75,
             'bagging_freq': 10,
-            'learning_rate': 0.05,
+            'learning_rate': 0.01,
             'seed': 2022,
             # 'max_depth': 10,
             'verbose': -1,

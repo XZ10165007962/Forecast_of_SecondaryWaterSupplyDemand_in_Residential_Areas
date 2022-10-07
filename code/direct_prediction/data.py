@@ -38,6 +38,7 @@ test4 开始 2022-08-21 01:00:00 5569  结束 2022-08-28 00:00:00  5736
 def get_all_data():
 	data_ = pd.read_csv(conf.train_data_path + "hourly_dataset.csv")
 	data_["time_index"] = np.arange(1, data_.shape[0] + 1)
+	print(data_.corr())
 	flow_id = [
 		"flow_1", "flow_2", "flow_3", "flow_4", "flow_5", "flow_6", "flow_7", "flow_8", "flow_9", "flow_10", "flow_11",
 		"flow_12", "flow_13", "flow_14", "flow_15", "flow_16", "flow_17", "flow_18", "flow_19", "flow_20"
@@ -52,6 +53,13 @@ def get_all_data():
 			data = data_.loc[:, ["time", "time_index", flow, "train or test"]].rename(columns={flow: "flow"})
 			data["flow_id"] = flow
 			all_data = pd.concat([all_data, data], axis=0)
+	all_data["day_time"] = list(map(lambda x:str(x)[:10], all_data["time"]))
+	weather_data = pd.read_csv(conf.train_data_path + "weather.csv")
+	epi_data = pd.read_csv(conf.train_data_path + "epidemic.csv").rename(columns={"jzrq":"day_time"})
+	epi_data = epi_data.fillna(0)
+	all_data = all_data.merge(weather_data.loc[:, ["time", "R", "fx", "T", "U", "fs", "V", "P"]], on=["time"], how="left")
+	all_data = all_data.merge(epi_data.loc[:, ["day_time", "zz", "wz", "glzl", "yxgc", "xzqz", "xzcy", "xzsw"]], on=["day_time"], how="left")
+	del all_data["day_time"]
 	all_data.reset_index(drop=True, inplace=True)
 	return all_data
 
@@ -68,13 +76,17 @@ def get_data():
 		print(f"========={flow}===========")
 		if i == 0:
 			data = data_[data_["flow_id"] == flow].reset_index(drop=True)
-			data = data.loc[:, ["time", "time_index", "flow", "train or test", "flow_id"]]
+			data = data.loc[:,
+				   ["time", "time_index", "flow", "train or test", "flow_id", "R", "fx", "T", "U", "fs", "V", "P", "zz",
+					"wz", "glzl", "yxgc", "xzqz", "xzcy", "xzsw"]]
 			data = data_cleaning(data)
 			data = out_liner(data)
 			all_data = data
 		else:
 			data = data_[data_["flow_id"] == flow].reset_index(drop=True)
-			data = data.loc[:, ["time", "time_index", "flow", "train or test", "flow_id"]]
+			data = data.loc[:,
+				   ["time", "time_index", "flow", "train or test", "flow_id", "R", "fx", "T", "U", "fs", "V", "P", "zz",
+					"wz", "glzl", "yxgc", "xzqz", "xzcy", "xzsw"]]
 			if flow == "flow_19":
 				data.loc[[2, 3, 4, 5, 6], ["flow"]] = [0.922571378, 0.774033298, 0.387016649, 0.65820085, 1.105177825]
 				# 27.238 / 37.175
@@ -239,6 +251,6 @@ def get_result():
 	sub.to_csv(conf.predict_data_path + "sub.csv", index=False)
 if __name__ == '__main__':
 	# all_data = all_data()
-	# all_data = get_data()
-	# all_data.to_csv(conf.tmp_data_paht + "all_data.csv", index=False)
-	get_result()
+	all_data = get_data()
+	all_data.to_csv(conf.tmp_data_paht + "all_data.csv", index=False)
+	# get_result()

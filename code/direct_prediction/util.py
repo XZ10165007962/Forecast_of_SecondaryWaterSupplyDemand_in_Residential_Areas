@@ -20,12 +20,15 @@ pd.set_option('display.max_columns', None)
 pd.set_option('display.max_rows', None)
 
 
-def MSLE(y, y_hut):
+def MSLE(y, y_hut, flag=0):
     n = len(y)
     err = 0
     for i, j in zip(y, y_hut):
         err += pow((np.log(1 + i) - np.log(1 + j)), 2)
-    return 1 / (err / n + 1)
+    if flag:
+        return 1 / (err / n * 20 + 1)
+    else:
+        return 1 / (err / n + 1)
 
 
 def data_cleaning(data_):

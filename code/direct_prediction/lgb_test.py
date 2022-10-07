@@ -7,6 +7,7 @@
 @version:
 @desc: 
 """
+import numpy as np
 import pandas as pd
 import warnings
 
@@ -44,3 +45,21 @@ if __name__ == '__main__':
         val_pred, test_pred = tree_model.lgb_model(train_x, train_y, test_x, val_x, val_y, cat)
         all_data.loc[test.index, ["flow"]] = test_pred
     all_data.to_csv(conf.predict_data_path + "sub_all.csv", index_label=False)
+    all_data = all_data[all_data["train or test"] != "train"]
+    flow_id = [
+        "flow_1", "flow_2", "flow_3", "flow_4", "flow_5", "flow_6", "flow_7", "flow_8", "flow_9", "flow_10", "flow_11",
+        "flow_12", "flow_13", "flow_14", "flow_15", "flow_16", "flow_17", "flow_18", "flow_19", "flow_20"
+    ]
+    sub = pd.DataFrame()
+    for i, flow in enumerate(flow_id):
+        temp = all_data[all_data["flow_id"] == flow].reset_index(drop=True)
+        if i == 0:
+            sub = temp.loc[:, ["time", "flow"]]
+        else:
+            sub = pd.concat([sub, temp.loc[:, ["flow"]]], axis=1)
+    sub.columns = ["time",
+                   "flow_1", "flow_2", "flow_3", "flow_4", "flow_5", "flow_6", "flow_7", "flow_8", "flow_9", "flow_10",
+                   "flow_11",
+                   "flow_12", "flow_13", "flow_14", "flow_15", "flow_16", "flow_17", "flow_18", "flow_19", "flow_20"
+                   ]
+    sub.to_csv(conf.predict_data_path + "sub.csv", index=False)
