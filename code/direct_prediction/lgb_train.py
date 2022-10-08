@@ -31,7 +31,7 @@ pd.set_option('max_colwidth', 200)
 
 if __name__ == '__main__':
     print("获取数据")
-    all_data = pd.read_csv(conf.tmp_data_paht + "all_data.csv")
+    all_data = pd.read_csv(conf.tmp_data_paht + "all_data_new.csv")
     all_data, feature, cat = features.get_features(all_data)
     label = ["flow"]
     time_start = 2713
@@ -61,4 +61,4 @@ if __name__ == '__main__':
         print("测试集mse:", mean_squared_error(err_data.loc[:, ["pre"]].values, err_data.loc[:, ["flow"]].values))
         print("测试集msle:", MSLE(err_data.loc[:, ["pre"]].values, err_data.loc[:, ["flow"]].values))
     print("测试集msle:", MSLE(err_data_.loc[:, ["pre"]].values, err_data_.loc[:, ["flow"]].values, 1))
-    all_data.to_csv(conf.tmp_data_paht + "pre_data.csv", index=False)
+    all_data.to_csv(conf.predict_data_path + "train_pre.csv", index=False)

@@ -31,7 +31,7 @@ def get_features(all_data, lag=36, rolling=3):
 	all_data, time_feature = time_features(all_data)
 	features.extend(time_feature)
 	# 获取滞后特征
-	for i, j in enumerate(range(24*7, 24*7+lag+2)):
+	for i, j in enumerate(range(24*7, 24*7+lag)):
 		all_data[f"flow_lag_{i}"] = all_data.groupby(["flow_id"])["flow"].shift(j)
 		features.append(f"flow_lag_{i}")
 		all_data[f"flow_lag_{i}_roll"] = all_data.groupby(["flow_id"])["flow"].shift(j).rolling(rolling).mean()
@@ -40,6 +40,29 @@ def get_features(all_data, lag=36, rolling=3):
 		# features.append(f"flow_lag_{i}_diff")
 		# all_data[f"flow_lag_{i}_diff_lag"] = all_data[f"flow_lag_{i}"] + all_data[f"flow_lag_{i}_diff"]
 		# features.append(f"flow_lag_{i}_diff_lag")
+	# 同比
+	week_lag = 3
+	for i in range(7, week_lag + 8):
+		if i >= 2:
+			all_data[f"flow_lag_{24 * i - 1}"] = all_data.groupby(["flow_id"])["flow"].shift(24 * i - 1)
+			all_data[f"flow_lag_{24 * i}"] = all_data.groupby(["flow_id"])["flow"].shift(24 * i)
+			all_data[f"flow_lag_{24 * i + 1}"] = all_data.groupby(["flow_id"])["flow"].shift(24 * i + 1)
+			features.append(f"flow_lag_{24 * i - 1}")
+			features.append(f"flow_lag_{24 * i}")
+			features.append(f"flow_lag_{24 * i + 1}")
+
+			all_data[f"flow_lag_{24 * i - 1}_{24 * i}_{24 * i + 1}_mean"] = \
+				all_data.loc[:, [f"flow_lag_{24 * i - 1}", f"flow_lag_{24 * i}", f"flow_lag_{24 * i + 1}"]].mean(axis=1)
+			features.append(f"flow_lag_{24 * i - 1}_{24 * i}_{24 * i + 1}_mean")
+			all_data[f"flow_lag_{24 * i}_{24 * i + 1}_mean"] = \
+				all_data.loc[:, [f"flow_lag_{24 * i}", f"flow_lag_{24 * i + 1}"]].mean(axis=1)
+			features.append(f"flow_lag_{24 * i}_{24 * i + 1}_mean")
+
+	tongbi_col = [f"flow_lag_{24 * i}" for i in range(7, week_lag + 8)]
+	funcs = ["mean", "sum", "median", "max", "min", "std"]
+	for func in funcs:
+		all_data[f"tongbi_{func}"] = all_data[tongbi_col].apply(func, axis=1)
+		features.append(f"tongbi_{func}")
 
 	# 计算统计特征
 	funcs = ["mean", "sum", "median", "max", "min", "std"]
@@ -106,6 +129,13 @@ def time_features(data_):
 	data_["is_weekday"] = list(map(lambda x: 1 if x >= 5 else 0, data_["dayofweek"]))
 	data_["is_free"] = list(map(lambda x: 1 if x >= 7 and x <= 23 else 0, data_["hour"]))
 	features = ["month", "day", "dayofweek", "hour", "is_weekday", "is_free"]
+	# jiaqibiao = [1, 2, 3, 31, 32, 33, 34, 35, 36, 37, 93, 94, 95, 120, 121, 122, 123, 124, 154, 155, 156]
+	# jiaqibiao_after = [30, 92, 119, 153]
+	# jiaqibiao_latter = [4, 38, 96, 125, 157]
+	# data_["jiaqi"] = list(map(lambda x: 1 if x in jiaqibiao else 0, data_["dayofyear"]))
+	# data_["jiaqi_after"] = list(map(lambda x: 1 if x in jiaqibiao_after else 0, data_["dayofyear"]))
+	# data_["jiaqi_latter"] = list(map(lambda x: 1 if x in jiaqibiao_latter else 0, data_["dayofyear"]))
+	# features.extend(["jiaqi", "jiaqi_after", "jiaqi_latter"])
 	return data_, features
 
 

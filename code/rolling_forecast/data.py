@@ -13,7 +13,7 @@ import pandas as pd
 import numpy as np
 
 import conf
-from util import data_cleaning, out_liner
+from util import data_cleaning, out_liner, abnormal_data, fill_nan
 
 # 设置value的显示长度为200，默认为50
 pd.set_option('max_colwidth', 200)
@@ -65,9 +65,10 @@ def get_all_data():
 							  on=["day_time"], how="left")
 	del all_data["day_time"]
 	del data_["day_time"]
-
-	all_data["time"] = pd.to_datetime(all_data["time"])
-	all_data["dayofyear"] = all_data["time"].dt.dayofyear
+	all_data = abnormal_data(all_data)
+	all_data = fill_nan(all_data)
+	# all_data["time"] = pd.to_datetime(all_data["time"])
+	# all_data["dayofyear"] = all_data["time"].dt.dayofyear
 
 	data_.to_csv(conf.tmp_data_paht + "hour_data.csv", index=False)
 	all_data.reset_index(drop=True, inplace=True)
@@ -279,5 +280,5 @@ def get_result():
 if __name__ == '__main__':
 	# all_data = get_all_data()
 	# all_data = get_data()
-	# all_data.to_csv(conf.tmp_data_paht + "all_data.csv", index=False)
+	# all_data.to_csv(conf.tmp_data_paht + "all_data_new.csv", index=False)
 	get_result()

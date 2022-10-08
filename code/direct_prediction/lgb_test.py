@@ -26,7 +26,7 @@ pd.set_option('max_colwidth', 200)
 
 if __name__ == '__main__':
     print("获取数据")
-    all_data = pd.read_csv(conf.tmp_data_paht + "all_data.csv")
+    all_data = pd.read_csv(conf.tmp_data_paht + "all_data_new.csv")
     all_data, feature, cat = features.get_features(all_data)
     label = ["flow"]
     test_list = ["test1", "test2", "test3", "test4"]

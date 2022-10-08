@@ -12,6 +12,8 @@
 import pandas as pd
 import numpy as np
 
+from code.direct_prediction import conf
+
 # 设置value的显示长度为200，默认为50
 pd.set_option('max_colwidth', 200)
 # 显示所有列，把行显示设置成最大
@@ -245,3 +247,50 @@ def out_liner(data_):
         data_.loc[use_index, ["flow"]] = 0.252 / (2.263 / 1.843)
         data_.loc[use_index + 1, ["flow"]] = 0.371 / (2.263 / 1.843)
     return data_
+
+
+def abnormal_data(data_):
+    columns = data_.columns
+    def q1(x):
+        return x.quantile(0.25)
+    def q2(x):
+        return x.quantile(0.75)
+    print("异常值识别")
+    data_["time"] = pd.to_datetime(data_["time"])
+    data_["month"] = data_["time"].dt.month
+    data_["hour"] = data_["time"].dt.hour
+    data_["id_hour_std"] = data_.groupby(["month", "hour", "flow_id"])["flow"].transform("std")
+    data_["id_hour_mean"] = data_.groupby(["month", "hour", "flow_id"])["flow"].transform("mean")
+    data_["id_hour_q1"] = data_.groupby(["month", "hour", "flow_id"])["flow"].transform(q1)
+    data_["id_hour_q3"] = data_.groupby(["month", "hour", "flow_id"])["flow"].transform(q2)
+    data_["lower_1"] = data_["id_hour_mean"] - 3 * data_["id_hour_std"]
+    data_["upper_1"] = data_["id_hour_mean"] + 3 * data_["id_hour_std"]
+    data_["lower_2"] = data_["id_hour_q1"] - 1.5*(data_["id_hour_q3"] - data_["id_hour_q1"])
+    data_["upper_2"] = data_["id_hour_q3"] + 1.5*(data_["id_hour_q3"] - data_["id_hour_q1"])
+    data_["lower"] = list(map(lambda x,y: x if x > y else y, data_["lower_1"], data_["lower_2"]))
+    data_["upper"] = list(map(lambda x,y: x if x < y else y, data_["upper_1"], data_["upper_2"]))
+    data_["outer"] = list(map(lambda x,y,z: 1 if x < y or x > z else 0, data_["flow"], data_["lower"], data_["upper"]))
+    data_["flow"] = list(map(lambda x,y: np.nan if x == 1 else y, data_["outer"], data_["flow"]))
+    return data_[columns]
+
+
+def fill_nan(data_):
+    columns = data_.columns
+    print("数据填充")
+    fillna_col = []
+    for i in range(1, 29):
+        data_[f"flow_lag_{i}"] = data_.groupby(["flow_id"])["flow"].shift(24*i)
+        fillna_col.append(f"flow_lag_{i}")
+    for i in range(1, 29):
+        data_[f"flow_lag_{-i}"] = data_.groupby(["flow_id"])["flow"].shift(-24*i)
+        fillna_col.append(f"flow_lag_{-i}")
+    data_["fill_data"] = data_[fillna_col].mean(axis=1)
+    data_["fill_flag"] = pd.isna(data_["flow"])
+    data_["flow"] = list(map(lambda x,y,z: z if y else x, data_["flow"], data_["fill_flag"], data_["fill_data"]))
+    return data_[columns]
+
+
+if __name__ == '__main__':
+    data = pd.read_csv(conf.tmp_data_paht + "all_data.csv")
+    print(data.head())
+    fill_nan(data)
