@@ -12,7 +12,7 @@
 import pandas as pd
 import numpy as np
 
-from code.direct_prediction import conf
+from mycode.direct_prediction import conf
 
 # 设置value的显示长度为200，默认为50
 pd.set_option('max_colwidth', 200)

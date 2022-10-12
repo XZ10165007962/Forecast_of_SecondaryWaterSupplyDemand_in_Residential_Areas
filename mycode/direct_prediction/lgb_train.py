@@ -16,7 +16,7 @@ import warnings
 from matplotlib import pyplot as plt
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 
-from code.direct_prediction import data
+from mycode.direct_prediction import data
 import features
 import tree_model
 import conf

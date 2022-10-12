@@ -26,8 +26,8 @@ from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow import keras
 from tensorflow.keras import layers
 
-from code.util import conf
-from code.util.util import MSLE
+from mycode.util import conf
+from mycode.util.util import MSLE
 
 warnings.filterwarnings('ignore')
 # 显示所有列

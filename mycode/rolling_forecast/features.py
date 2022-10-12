@@ -14,7 +14,7 @@ import numpy as np
 import warnings
 from tqdm import tqdm
 
-from code.rolling_forecast import conf
+from mycode.rolling_forecast import conf
 
 warnings.filterwarnings('ignore')
 # 显示所有列

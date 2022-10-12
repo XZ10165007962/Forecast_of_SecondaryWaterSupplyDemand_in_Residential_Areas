@@ -12,8 +12,8 @@ import numpy as np
 import warnings
 from tqdm import tqdm
 
-from code.util import conf
-from code.util.util import abnormal_data, fill_nan
+from mycode.util import conf
+from mycode.util.util import abnormal_data, fill_nan
 
 warnings.filterwarnings('ignore')
 # 显示所有列

@@ -17,12 +17,12 @@ from sklearn.linear_model import LinearRegression
 from sklearn.svm import SVR
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.ensemble import RandomForestRegressor, StackingRegressor, BaggingRegressor
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split, KFold
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 
-from code.util import conf
-from code.util.util import MSLE
+from mycode.util import conf
+from mycode.util.util import MSLE
 
 warnings.filterwarnings('ignore')
 # 显示所有列
@@ -79,7 +79,64 @@ def fueat(data):
 	return data, feat_col
 
 
-def train(data):
+def model(X_train, X_test, y_train, y_test, flag=0, if_train=True):
+	if flag == 0:
+		model_list = {"knn": KNeighborsRegressor(),
+					  "svr": SVR(),
+					  "bagging": BaggingRegressor(random_state=2022, n_estimators=100, max_samples=0.9,
+												  max_features=0.9),
+					  "randomtree": RandomForestRegressor(random_state=2022),
+					  # "linear": LinearRegression()
+					  }
+		# knn， svr， bagg， 随机森林
+		if if_train:
+			pre_list_all = np.zeros((len(X_test),))
+			pre_list_knn = []
+			pre_list_svr = []
+			pre_list_bagg = []
+			pre_list_rand = []
+			pre_list_linear = []
+			for key, model in model_list.items():
+				print(f"============{key}========")
+				# n_splits = 5
+				# pre = 0
+				# kf = KFold(n_splits=n_splits)
+				# for tra_index, val_index in kf.split(X_train):
+				# 	model.fit(X_train[tra_index], y_train[tra_index])
+				# 	pre += model.predict(X_test) / n_splits
+				model.fit(X_train, y_train)
+				pre = model.predict(X_test)
+				if key == "knn":
+					pre_list_knn.extend(pre)
+				elif key == "svr":
+					pre_list_svr.extend(pre)
+				elif key == "bagging":
+					pre_list_bagg.extend(pre)
+				elif key == "randomtree":
+					pre_list_rand.extend(pre)
+				else:
+					pre_list_linear.extend(pre)
+				pre_list_all += pre / len(model_list)
+		return pre_list_all, pre_list_knn, pre_list_svr, pre_list_bagg, pre_list_rand, pre_list_linear
+	if flag == 1:
+		estimators = [
+			('knn', KNeighborsRegressor()),
+			('svr', SVR()),
+			('bagging', BaggingRegressor(random_state=2022, n_estimators=100, max_samples=0.9, max_features=0.9)),
+			('randomtree', RandomForestRegressor(random_state=2022))
+		]
+		reg = StackingRegressor(
+			estimators=estimators,
+			final_estimator=LinearRegression(),
+			cv=5
+		)
+		if if_train:
+			reg.fit(X_train, y_train)
+			pre = reg.predict(X_test)
+			return pre
+
+
+def train(data, flag = 1):
 	train1 = data[(data['time'] >= '2022-01-01 01:00:00') & (data['time'] < '2022-05-01 01:00:00')].reset_index(
 		drop=True)
 	train2 = data[(data['time'] >= '2022-05-08 01:00:00') & (data['time'] < '2022-06-01 01:00:00')].reset_index(
@@ -90,7 +147,6 @@ def train(data):
 		drop=True)
 	data, feat = fueat(train1)
 	train_ = data[data['time'] >= '2022-02-15 01:00:00']
-	# train_ = data.dropna()
 	pre_list = []
 	pre_list_knn = []
 	pre_list_svr = []
@@ -98,69 +154,37 @@ def train(data):
 	pre_list_rand = []
 	pre_list_linear = []
 	test_list = []
-	model_list = {"knn": KNeighborsRegressor(),
-				  "svr": SVR(),
-				  "bagging": BaggingRegressor(random_state=2022, n_estimators=100, max_samples=0.9, max_features=0.9),
-				  "randomtree": RandomForestRegressor(random_state=2022),
-				  "linear": LinearRegression()
-				  }
-	estimators = [
-		('knn', KNeighborsRegressor()),
-		('svr', SVR()),
-		('bagging', BaggingRegressor(random_state=2022, n_estimators=100, max_samples=0.9, max_features=0.9)),
-		('randomtree', RandomForestRegressor(random_state=2022))
-	]
-	reg = StackingRegressor(
-		estimators=estimators,
-		final_estimator=LinearRegression(),
-		cv=5
-	)
 	for id in [
 		"flow_1", "flow_2", "flow_3", "flow_4", "flow_5", "flow_6", "flow_7", "flow_8", "flow_9", "flow_10", "flow_11",
 		"flow_12", "flow_13", "flow_14", "flow_15", "flow_16", "flow_17", "flow_18", "flow_19", "flow_20"
 	]:
-		pre_list_all = np.zeros((540,))
 		print(f"+++++++++++++++++{id}+++++++++++++++++++++")
 		train = train_[train_["flow_id"] == id]
-		X_data, y_data = train[feat], train["flow"]
-		stand = StandardScaler()
+		X_data, y_data = train[feat], train["flow"].values
+		stand = MinMaxScaler()
 		X_data = stand.fit_transform(X_data)
 		X_train, X_test, y_train, y_test = train_test_split(X_data, y_data, test_size=0.3, random_state=2022)
-		reg.fit(X_train,y_train)
-		pre = reg.predict(X_test)
-		pre_list.extend(pre)
-		# knn， svr， bagg， 随机森林
-		# for key, model in model_list.items():
-		# 	print(f"============{key}========")
-		# 	model.fit(X_train, y_train)
-		# 	pre = model.predict(X_test)
-		# 	print("mae:", mean_absolute_error(y_test, pre))
-		# 	print("mse:", mean_squared_error(y_test, pre))
-		# 	print("mlse:", MSLE(y_test, pre))
-		# 	if key == "knn":
-		# 		pre_list_knn.extend(pre)
-		# 	elif key == "svr":
-		# 		pre_list_svr.extend(pre)
-		# 	elif key == "bagging":
-		# 		pre_list_bagg.extend(pre)
-		# 	elif key == "randomtree":
-		# 		pre_list_rand.extend(pre)
-		# 	else:
-		# 		pre_list_linear.extend(pre)
-		# 	pre_list_all += pre / len(model_list)
-		# pre_list.extend(pre_list_all)
-		test_list.extend(y_test)
-		# plt.figure()
-		# plt.plot(np.arange(len(pre_list_all)),pre_list_all, label="pre")
-		# plt.plot(np.arange(len(pre_list_all)),y_test, label="y_test")
-		# plt.legend()
-		# plt.show()
-	print("mlse:", MSLE(test_list, pre_list, flag=1))
-	print("knn mlse:", MSLE(test_list, pre_list_knn, flag=1))
-	print("svr mlse:", MSLE(test_list, pre_list_svr, flag=1))
-	print("bagg mlse:", MSLE(test_list, pre_list_bagg, flag=1))
-	print("rand mlse:", MSLE(test_list, pre_list_rand, flag=1))
-	print("linear mlse:", MSLE(test_list, pre_list_linear, flag=1))
+		if flag:
+			pre = model(X_train, X_test, y_train, y_test, flag=flag, if_train=True)
+			pre_list.extend(pre)
+			test_list.extend(y_test)
+			print("mlse:", MSLE(test_list, pre_list, flag=1))
+		else:
+			pre_all, pre_knn, pre_svr, pre_bagg, pre_rand, pr_linear = model(X_train, X_test, y_train, y_test, flag=flag, if_train=True)
+			pre_list.extend(pre_all)
+			pre_list_knn.extend(pre_knn)
+			pre_list_svr.extend(pre_svr)
+			pre_list_bagg.extend(pre_bagg)
+			pre_list_rand.extend(pre_rand)
+			pre_list_linear.extend(pr_linear)
+			test_list.extend(y_test)
+			print("knn mlse:", MSLE(test_list, pre_list_knn, flag=1))
+			print("svr mlse:", MSLE(test_list, pre_list_svr, flag=1))
+			print("bagg mlse:", MSLE(test_list, pre_list_bagg, flag=1))
+			print("rand mlse:", MSLE(test_list, pre_list_rand, flag=1))
+			print("linear mlse:", MSLE(test_list, pre_list_linear, flag=1))
+			print("mlse:", MSLE(test_list, pre_list, flag=1))
+
 
 def model_test(data):
 	orinal_data = data
@@ -174,7 +198,6 @@ def model_test(data):
 				  "randomtree": RandomForestRegressor(random_state=2022)
 				  }
 	test_list = ["test1", "test2", "test3", "test4"]
-
 	estimators = [
 		('knn', KNeighborsRegressor()),
 		('svr', SVR()),
@@ -215,7 +238,6 @@ def model_test(data):
 				pre_ser += pre/len(model_list)
 				orinal_data.loc[X_test.index, key] = pre
 			pre_final.extend(pre_ser.tolist())
-			print(pre_final)
 			# reg.fit(X_train, y_train)
 			# pre = reg.predict(X_test)
 			# pre_final.extend(pre)
@@ -247,4 +269,4 @@ def model_test(data):
 
 if __name__ == '__main__':
 	data = pd.read_csv(conf.tmp_data_paht+"all_data_new.csv")
-	model_test(data)
+	train(data, flag=0)

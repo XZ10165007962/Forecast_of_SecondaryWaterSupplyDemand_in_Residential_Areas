@@ -14,7 +14,7 @@ import warnings
 import conf
 import features
 import tree_model
-from code.direct_prediction import data
+from mycode.direct_prediction import data
 
 warnings.filterwarnings('ignore')
 # 显示所有列

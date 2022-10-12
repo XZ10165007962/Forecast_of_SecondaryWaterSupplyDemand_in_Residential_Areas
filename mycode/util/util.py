@@ -12,7 +12,7 @@ import numpy as np
 import warnings
 from tqdm import tqdm
 
-from code.util import conf
+from mycode.util import conf
 
 warnings.filterwarnings('ignore')
 # 显示所有列
@@ -34,8 +34,9 @@ def MSLE(y, y_hut, flag=0):
         return 1 / (err / n + 1)
 
 
-def abnormal_data(data_):
-    columns = data_.columns
+def abnormal_data(data):
+    data = data.reset_index(drop=True)
+    data_ = data[data["train or test"] == "train"]
     def q1(x):
         return x.quantile(0.25)
     def q2(x):
@@ -56,23 +57,28 @@ def abnormal_data(data_):
     data_["upper"] = list(map(lambda x,y: x if x < y else y, data_["upper_1"], data_["upper_2"]))
     data_["outer"] = list(map(lambda x,y,z: 1 if x < y or x > z else 0, data_["flow"], data_["lower"], data_["upper"]))
     data_["flow"] = list(map(lambda x,y: np.nan if x == 1 else y, data_["outer"], data_["flow"]))
-    return data_[columns]
+    index = data_.index
+    data.loc[index, ["flow"]] = data_["flow"]
+    return data
 
 
-def fill_nan(data_):
-    columns = data_.columns
+def fill_nan(data):
+    data = data.reset_index(drop=True)
+    data_ = data[data["train or test"] == "train"]
     print("数据填充")
     fillna_col = []
     for i in range(1, 29):
         data_[f"flow_lag_{i}"] = data_.groupby(["flow_id"])["flow"].shift(24*i)
         fillna_col.append(f"flow_lag_{i}")
-    # for i in range(1, 29):
-    #     data_[f"flow_lag_{-i}"] = data_.groupby(["flow_id"])["flow"].shift(-24*i)
-    #     fillna_col.append(f"flow_lag_{-i}")
+    for i in range(1, 29):
+        data_[f"flow_lag_{-i}"] = data_.groupby(["flow_id"])["flow"].shift(-24*i)
+        fillna_col.append(f"flow_lag_{-i}")
     data_["fill_data"] = data_[fillna_col].mean(axis=1)
     data_["fill_flag"] = pd.isna(data_["flow"])
     data_["flow"] = list(map(lambda x,y,z: z if y else x, data_["flow"], data_["fill_flag"], data_["fill_data"]))
-    return data_[columns]
+    index = data_.index
+    data.loc[index, ["flow"]] = data_["flow"]
+    return data
 
 
 if __name__ == '__main__':

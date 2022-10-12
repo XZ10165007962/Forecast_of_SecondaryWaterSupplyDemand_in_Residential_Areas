@@ -14,7 +14,7 @@ import warnings
 from statsmodels.tsa.holtwinters import ExponentialSmoothing
 from tqdm import tqdm
 from sklearn.metrics import mean_squared_error
-from code.util import conf, util
+from mycode.util import conf, util
 import pmdarima as pm
 
 warnings.filterwarnings('ignore')

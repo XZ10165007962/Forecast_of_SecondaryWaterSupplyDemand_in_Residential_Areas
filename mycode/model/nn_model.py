@@ -17,8 +17,8 @@ from torch.utils.data import Dataset, DataLoader
 from tqdm import tqdm
 from torch import nn
 
-from code.util import conf
-from code.util.util import MSLE
+from mycode.util import conf
+from mycode.util.util import MSLE
 
 warnings.filterwarnings('ignore')
 # 显示所有列

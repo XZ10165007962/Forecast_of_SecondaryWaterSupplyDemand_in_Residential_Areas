@@ -14,7 +14,7 @@ import numpy as np
 import warnings
 from tqdm import tqdm
 
-from code.util import conf
+from mycode.util import conf
 
 warnings.filterwarnings('ignore')
 # 显示所有列
