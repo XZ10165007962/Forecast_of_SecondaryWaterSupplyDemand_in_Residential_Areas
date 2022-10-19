@@ -60,11 +60,11 @@ if __name__ == '__main__':
         err_data_ = all_data.loc[test_x.index, :]
         print(f"======={id}============")
         err_data = err_data_[err_data_["flow_id"] == id]
-        plt.figure()
-        plt.plot(np.arange(len(err_data.loc[:, ["flow"]].values)), err_data.loc[:, ["pre"]].values, label="pre")
-        plt.plot(np.arange(len(err_data.loc[:, ["flow"]].values)), err_data.loc[:, ["flow"]].values, label="y_test")
-        plt.legend()
-        plt.show()
+        # plt.figure()
+        # plt.plot(np.arange(len(err_data.loc[:, ["flow"]].values)), err_data.loc[:, ["pre"]].values, label="pre")
+        # plt.plot(np.arange(len(err_data.loc[:, ["flow"]].values)), err_data.loc[:, ["flow"]].values, label="y_test")
+        # plt.legend()
+        # plt.show()
         print("测试集mae:", mean_absolute_error(err_data.loc[:, ["pre"]].values, err_data.loc[:, ["flow"]].values))
         print("测试集mse:", mean_squared_error(err_data.loc[:, ["pre"]].values, err_data.loc[:, ["flow"]].values))
         print("测试集msle:", MSLE(err_data.loc[:, ["pre"]].values, err_data.loc[:, ["flow"]].values))

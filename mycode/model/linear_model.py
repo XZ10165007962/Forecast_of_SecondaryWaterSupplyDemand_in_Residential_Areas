@@ -13,9 +13,10 @@ import warnings
 from tqdm import tqdm
 import matplotlib.pyplot as plt    #画图的
 
-from sklearn.linear_model import LinearRegression
-from sklearn.svm import SVR
-from sklearn.neighbors import KNeighborsRegressor
+from sklearn.linear_model import LinearRegression,Lasso,Ridge
+from sklearn.svm import SVR,LinearSVR
+from sklearn.kernel_ridge import KernelRidge
+from sklearn.neighbors import KNeighborsRegressor,RadiusNeighborsRegressor
 from sklearn.ensemble import RandomForestRegressor, StackingRegressor, BaggingRegressor
 from sklearn.model_selection import train_test_split, KFold
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
@@ -35,36 +36,26 @@ pd.set_option('max_colwidth', 200)
 
 def fueat(data):
 	feat_col = []
-	for i in range(1, 4):
-		data[f"flow_{i}+1"] = data.groupby(["flow_id"])["flow"].shift(24*i+1)
+	for i in range(7, 15):
 		data[f"flow_{i}"] = data.groupby(["flow_id"])["flow"].shift(24*i)
-		data[f"flow_{i}-1"] = data.groupby(["flow_id"])["flow"].shift(24*i-1)
-		# data[f"flow_{i}_mean"] = data[[f"flow_{i}+1", f"flow_{i}", f"flow_{i}-1"]].mean(axis=1)
-		# feat_col.append(f"flow_{i}_mean")
-		feat_col.extend([f"flow_{i}+1", f"flow_{i}",f"flow_{i}-1"])
+		feat_col.extend([f"flow_{i}"])
 		for func in ["mean", "max", "min"]:
 			if func == "mean":
-				data[f"flow_{i}+1_roll_{func}"] = data.groupby(["flow_id"])["flow"].shift(24 * i + 1).rolling(6).mean()
 				data[f"flow_{i}_roll_{func}"] = data.groupby(["flow_id"])["flow"].shift(24 * i).rolling(6).mean()
-				data[f"flow_{i}-1_roll_{func}"] = data.groupby(["flow_id"])["flow"].shift(24 * i - 1).rolling(6).mean()
-				feat_col.extend([f"flow_{i}+1_roll_{func}", f"flow_{i}_roll_{func}", f"flow_{i}-1_roll_{func}"])
-			# if func == "max":
-			# 	data[f"flow_{i}+1_roll_{func}"] = data.groupby(["flow_id"])["flow"].shift(24 * i + 1).rolling(6).max()
-			# 	data[f"flow_{i}_roll_{func}"] = data.groupby(["flow_id"])["flow"].shift(24 * i).rolling(6).max()
-			# 	data[f"flow_{i}-1_roll_{func}"] = data.groupby(["flow_id"])["flow"].shift(24 * i - 1).rolling(6).max()
-			# if func == "min":
-			# 	data[f"flow_{i}+1_roll_{func}"] = data.groupby(["flow_id"])["flow"].shift(24 * i + 1).rolling(6).min()
-			# 	data[f"flow_{i}_roll_{func}"] = data.groupby(["flow_id"])["flow"].shift(24 * i).rolling(6).min()
-			# 	data[f"flow_{i}-1_roll_{func}"] = data.groupby(["flow_id"])["flow"].shift(24 * i - 1).rolling(6).min()
-	# data["flow_mean"] = data[[f"flow_1", f"flow_2", f"flow_3"]].mean(axis=1)
-	# feat_col.append(f"flow_mean")
-	# data["flow+1_mean"] = data[[f"flow_1+1", f"flow_2+1", f"flow_3+1"]].mean(axis=1)
-	# feat_col.append(f"flow+1_mean")
-	# data["flow-1_mean"] = data[[f"flow_1-1", f"flow_2-1", f"flow_3-1"]].mean(axis=1)
-	# feat_col.append(f"flow-1_mean")
-	for i in range(24*7, 24*7+13):
+			if func == "max":
+				data[f"flow_{i}_roll_{func}"] = data.groupby(["flow_id"])["flow"].shift(24 * i).rolling(6).max()
+			if func == "min":
+				data[f"flow_{i}_roll_{func}"] = data.groupby(["flow_id"])["flow"].shift(24 * i).rolling(6).min()
+			feat_col.extend([f"flow_{i}_roll_{func}"])
+	data["flow_mean"] = data[["flow_7", "flow_8", "flow_9", "flow_10", "flow_11", "flow_12", "flow_13", "flow_14"]].mean(axis=1)
+	data["flow_max"] = data[["flow_7", "flow_8", "flow_9", "flow_10", "flow_11", "flow_12", "flow_13", "flow_14"]].max(axis=1)
+	data["flow_min"] = data[["flow_7", "flow_8", "flow_9", "flow_10", "flow_11", "flow_12", "flow_13", "flow_14"]].min(axis=1)
+	data["flow_sum"] = data[["flow_7", "flow_8", "flow_9", "flow_10", "flow_11", "flow_12", "flow_13", "flow_14"]].sum(axis=1)
+	data["flow_std"] = data[["flow_7", "flow_8", "flow_9", "flow_10", "flow_11", "flow_12", "flow_13", "flow_14"]].std(axis=1)
+	feat_col.extend(["flow_mean", "flow_max", "flow_min", "flow_sum", "flow_std"])
+	for i in range(24*7, 24*7+7):
 		data[f"flow_lag_{i}"] = data.groupby(["flow_id"])["flow"].shift(i)
-		data[f"flow_roll_{i}"] = data.groupby(["flow_id"])["flow"].shift(i).rolling(6).mean()
+		data[f"flow_roll_{i}"] = data.groupby(["flow_id"])["flow"].shift(i).rolling(i+1).mean()
 		feat_col.extend([f"flow_lag_{i}", f"flow_roll_{i}"])
 	data["time"] = pd.to_datetime(data["time"])
 	data["month"] = data["time"].dt.month
@@ -75,18 +66,22 @@ def fueat(data):
 	data["hour"] = data["time"].dt.hour
 	data['sin_hour'] = np.sin(2 * np.pi * data["hour"] / 24)
 	data['cos_hour'] = np.cos(2 * np.pi * data["hour"] / 24)
-	feat_col.extend(["month","dayofweek","hour",'sin_hour','cos_hour'])
+	feat_col.extend(["month", "dayofweek","hour",'sin_hour','cos_hour'])
+	data["month_mean"] = data.groupby(["flow_id", "month"])["flow"].transform("mean")
+	data["dayofweek_mean"] = data.groupby(["flow_id", "dayofweek"])["flow"].transform("mean")
+	data["hour_mean"] = data.groupby(["flow_id", "hour"])["flow"].transform("mean")
+	feat_col.extend(["hour_mean"])
 	return data, feat_col
 
 
 def model(X_train, X_test, y_train, y_test, flag=0, if_train=True):
 	if flag == 0:
-		model_list = {"knn": KNeighborsRegressor(),
+		model_list = {"knn": KNeighborsRegressor(weights="distance",algorithm="ball_tree",n_neighbors=3),
 					  "svr": SVR(),
 					  "bagging": BaggingRegressor(random_state=2022, n_estimators=100, max_samples=0.9,
 												  max_features=0.9),
 					  "randomtree": RandomForestRegressor(random_state=2022),
-					  # "linear": LinearRegression()
+					  "linear": LinearRegression()
 					  }
 		# knn， svr， bagg， 随机森林
 		if if_train:
@@ -136,7 +131,7 @@ def model(X_train, X_test, y_train, y_test, flag=0, if_train=True):
 			return pre
 
 
-def train(data, flag = 1):
+def train(data, flag = 0):
 	train1 = data[(data['time'] >= '2022-01-01 01:00:00') & (data['time'] < '2022-05-01 01:00:00')].reset_index(
 		drop=True)
 	train2 = data[(data['time'] >= '2022-05-08 01:00:00') & (data['time'] < '2022-06-01 01:00:00')].reset_index(
@@ -145,6 +140,7 @@ def train(data, flag = 1):
 		drop=True)
 	train4 = data[(data['time'] >= '2022-07-28 01:00:00') & (data['time'] < '2022-08-21 01:00:00')].reset_index(
 		drop=True)
+	train1["pre"] = 0
 	data, feat = fueat(train1)
 	train_ = data[data['time'] >= '2022-02-15 01:00:00']
 	pre_list = []
@@ -159,31 +155,33 @@ def train(data, flag = 1):
 		"flow_12", "flow_13", "flow_14", "flow_15", "flow_16", "flow_17", "flow_18", "flow_19", "flow_20"
 	]:
 		print(f"+++++++++++++++++{id}+++++++++++++++++++++")
-		train = train_[train_["flow_id"] == id]
-		X_data, y_data = train[feat], train["flow"].values
-		stand = MinMaxScaler()
-		X_data = stand.fit_transform(X_data)
-		X_train, X_test, y_train, y_test = train_test_split(X_data, y_data, test_size=0.3, random_state=2022)
-		if flag:
-			pre = model(X_train, X_test, y_train, y_test, flag=flag, if_train=True)
-			pre_list.extend(pre)
-			test_list.extend(y_test)
-			print("mlse:", MSLE(test_list, pre_list, flag=1))
-		else:
-			pre_all, pre_knn, pre_svr, pre_bagg, pre_rand, pr_linear = model(X_train, X_test, y_train, y_test, flag=flag, if_train=True)
-			pre_list.extend(pre_all)
-			pre_list_knn.extend(pre_knn)
-			pre_list_svr.extend(pre_svr)
-			pre_list_bagg.extend(pre_bagg)
-			pre_list_rand.extend(pre_rand)
-			pre_list_linear.extend(pr_linear)
-			test_list.extend(y_test)
-			print("knn mlse:", MSLE(test_list, pre_list_knn, flag=1))
-			print("svr mlse:", MSLE(test_list, pre_list_svr, flag=1))
-			print("bagg mlse:", MSLE(test_list, pre_list_bagg, flag=1))
-			print("rand mlse:", MSLE(test_list, pre_list_rand, flag=1))
-			print("linear mlse:", MSLE(test_list, pre_list_linear, flag=1))
-			print("mlse:", MSLE(test_list, pre_list, flag=1))
+		train__ = train_[train_["flow_id"] == id]
+		for week in [[0,1,2,3,4],[5,6]]:
+			train = train__[train__["dayofweek"].isin(week)]
+			X_data, y_data = train[feat], train["flow"].values
+			stand = MinMaxScaler()
+			X_data = stand.fit_transform(X_data)
+			X_train, X_test, y_train, y_test = train_test_split(X_data, y_data, test_size=0.3, random_state=2022)
+			if flag:
+				pre = model(X_train, X_test, y_train, y_test, flag=flag, if_train=True)
+				pre_list.extend(pre)
+				test_list.extend(y_test)
+				print("mlse:", MSLE(test_list, pre_list, flag=1))
+			else:
+				pre_all, pre_knn, pre_svr, pre_bagg, pre_rand, pr_linear = model(X_train, X_test, y_train, y_test, flag=flag, if_train=True)
+				pre_list.extend(pre_all)
+				pre_list_knn.extend(pre_knn)
+				pre_list_svr.extend(pre_svr)
+				pre_list_bagg.extend(pre_bagg)
+				pre_list_rand.extend(pre_rand)
+				pre_list_linear.extend(pr_linear)
+				test_list.extend(y_test)
+				print("knn mlse:", MSLE(test_list, pre_list_knn, flag=1))
+				print("svr mlse:", MSLE(test_list, pre_list_svr, flag=1))
+				print("bagg mlse:", MSLE(test_list, pre_list_bagg, flag=1))
+				print("rand mlse:", MSLE(test_list, pre_list_rand, flag=1))
+				print("linear mlse:", MSLE(test_list, pre_list_linear, flag=1))
+				print("mlse:", MSLE(test_list, pre_list, flag=1))
 
 
 def model_test(data):
@@ -192,10 +190,11 @@ def model_test(data):
 	orinal_data["svr"] = 0
 	orinal_data["bagging"] = 0
 	orinal_data["randomtree"] = 0
-	model_list = {"knn": KNeighborsRegressor(),
+	model_list = {"knn": KNeighborsRegressor(weights="distance",algorithm="ball_tree",n_neighbors=3),
 				  "svr": SVR(),
 				  "bagging": BaggingRegressor(random_state=2022, n_estimators=100, max_samples=0.9, max_features=0.9),
-				  "randomtree": RandomForestRegressor(random_state=2022)
+				  "randomtree": RandomForestRegressor(random_state=2022),
+				  "linear": LinearRegression()
 				  }
 	test_list = ["test1", "test2", "test3", "test4"]
 	estimators = [
@@ -209,7 +208,6 @@ def model_test(data):
 		final_estimator=LinearRegression(),
 		cv=5
 	)
-
 	for i, time in enumerate(['2022-05-08 00:00:00', '2022-06-08 00:00:00', '2022-07-28 00:00:00', '2022-08-28 00:00:00']):
 		data_ = orinal_data[orinal_data["time"] <= time]
 		feat_data, feat = fueat(data_)
@@ -269,4 +267,4 @@ def model_test(data):
 
 if __name__ == '__main__':
 	data = pd.read_csv(conf.tmp_data_paht+"all_data_new.csv")
-	train(data, flag=0)
+	train(data)
