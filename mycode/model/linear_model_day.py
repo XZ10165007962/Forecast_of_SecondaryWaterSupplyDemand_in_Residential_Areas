@@ -169,6 +169,7 @@ def train(data, flag = 0):
 				pre_list.extend(pre)
 				test_list.extend(y_test)
 				print("mlse:", MSLE(test_list, pre_list, flag=1))
+				train1.loc[train__.iloc[-24 * (day + 1):, :].index, ["flow"]] = pre
 			else:
 				pre_all, pre_knn, pre_svr, pre_bagg, pre_rand, pr_linear = model(X_train, X_test, y_train, y_test, flag=flag, if_train=True)
 				pre_list.extend(pre_all)
@@ -212,38 +213,46 @@ def model_test(data):
 		cv=5
 	)
 	for i, time in enumerate(['2022-05-08 00:00:00', '2022-06-08 00:00:00', '2022-07-28 00:00:00', '2022-08-28 00:00:00']):
+
 		data_ = orinal_data[orinal_data["time"] <= time]
-		feat_data, feat = fueat(data_)
-		train_ = feat_data[feat_data['time'] >= '2022-02-15 01:00:00']
-		# 对其进行标准化
-		stand = StandardScaler()
-		stand_train = stand.fit_transform(train_[feat])
-		stand_df = pd.DataFrame(stand_train, columns=feat, index=train_.index)
-		train = train_[train_["train or test"] != test_list[i]]
-		test = train_[train_["train or test"] == test_list[i]]
-		pre_final = []
 		for id in [
 			"flow_1", "flow_2", "flow_3", "flow_4", "flow_5", "flow_6", "flow_7", "flow_8", "flow_9", "flow_10",
 			"flow_11",
 			"flow_12", "flow_13", "flow_14", "flow_15", "flow_16", "flow_17", "flow_18", "flow_19", "flow_20"
 		]:
+			pre_final = []
 			print(f"+++++++++++++++++{id}+++++++++++++++++++++")
-			id_train = train[train["flow_id"] == id]
-			id_test = test[test["flow_id"] == id]
-			X_train, y_train = stand_df.loc[id_train.index, :], id_train["flow"]
-			X_test = stand_df.loc[id_test.index, :]
-			pre_ser = np.zeros((id_test.shape[0],))  # 存储预测结果
-			for key, model in model_list.items():
-				model.fit(X_train, y_train)
-				pre = model.predict(X_test)
-				pre_ser += pre/len(model_list)
-				orinal_data.loc[X_test.index, key] = pre
-			pre_final.extend(pre_ser.tolist())
+			id_train = data_[data_["flow_id"] == id]
+			for day in range(7, 0, -1):
+				feat_data, feat = fueat(id_train, day)
+				train_ = feat_data[feat_data['time'] >= '2022-02-15 01:00:00']
+				if day == 1:
+					train = train_
+				else:
+					train = train_.iloc[:-24 * (day-1), :]
+				# print(train_.iloc[-24:])
+				X_data, y_data = train.loc[:, feat], train.loc[:, ["flow"]].values
+				# 对其进行标准化
+				stand = MinMaxScaler()
+				X_data = stand.fit_transform(X_data)
+				X_train, y_train = X_data[:-24 * day], y_data[:-24 * day].flatten()
+				X_test = X_data[-24:]
+				print(f"+++++++++++++++++{day}+++++++++++++++++++++")
+				# print(id_train.iloc[-24 * day:-24 * (day-1)])
+				pre_ser = np.zeros((24,))  # 存储预测结果
+				for key, model in model_list.items():
+					model.fit(X_train, y_train)
+					pre = model.predict(X_test)
+					pre_ser += pre/len(model_list)
+					if day != 1:
+						id_train.loc[id_train.iloc[-24 * day:-24 * (day-1), :].index, key] = pre
+						id_train.loc[id_train.iloc[-24 * day:-24 * (day - 1), :].index, "flow"] = pre_ser
+				pre_final.extend(pre_ser.tolist())
 			# reg.fit(X_train, y_train)
 			# pre = reg.predict(X_test)
 			# pre_final.extend(pre)
-		# 将预测结果拼接回原始数据
-		orinal_data.loc[test.index, "flow"] = pre_final
+			# 将预测结果拼接回原始数据
+			orinal_data.loc[id_train.iloc[-24 * 7:, :].index, "flow"] = pre_final
 	orinal_data.to_csv(conf.predict_data_path + "orinal_data.csv", index=False)
 	# 保存提交结果
 	all_data = orinal_data[orinal_data["train or test"] != "train"]
@@ -270,4 +279,4 @@ def model_test(data):
 
 if __name__ == '__main__':
 	data = pd.read_csv(conf.tmp_data_paht+"all_data_new.csv")
-	train(data)
+	model_test(data)
