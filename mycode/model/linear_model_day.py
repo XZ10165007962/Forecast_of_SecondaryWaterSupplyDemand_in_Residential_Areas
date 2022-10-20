@@ -5,7 +5,7 @@
 @file: linear_model.py
 @time: 2022/10/8 15:08
 @version:
-@desc: 
+@desc:
 """
 import pandas as pd
 import numpy as np
@@ -34,11 +34,13 @@ pd.set_option('display.max_rows', None)
 pd.set_option('max_colwidth', 200)
 
 
-def fueat(data):
+def fueat(data, day):
 	feat_col = []
-	for i in range(7, 15):
+	use_col = []
+	for i in range(day, day+8):
 		data[f"flow_{i}"] = data.groupby(["flow_id"])["flow"].shift(24*i)
 		feat_col.extend([f"flow_{i}"])
+		use_col.extend([f"flow_{i}"])
 		for func in ["mean", "max", "min"]:
 			if func == "mean":
 				data[f"flow_{i}_roll_{func}"] = data.groupby(["flow_id"])["flow"].shift(24 * i).rolling(6).mean()
@@ -47,22 +49,19 @@ def fueat(data):
 			if func == "min":
 				data[f"flow_{i}_roll_{func}"] = data.groupby(["flow_id"])["flow"].shift(24 * i).rolling(6).min()
 			feat_col.extend([f"flow_{i}_roll_{func}"])
-	data["flow_mean"] = data[["flow_7", "flow_8", "flow_9", "flow_10", "flow_11", "flow_12", "flow_13", "flow_14"]].mean(axis=1)
-	data["flow_max"] = data[["flow_7", "flow_8", "flow_9", "flow_10", "flow_11", "flow_12", "flow_13", "flow_14"]].max(axis=1)
-	data["flow_min"] = data[["flow_7", "flow_8", "flow_9", "flow_10", "flow_11", "flow_12", "flow_13", "flow_14"]].min(axis=1)
-	data["flow_sum"] = data[["flow_7", "flow_8", "flow_9", "flow_10", "flow_11", "flow_12", "flow_13", "flow_14"]].sum(axis=1)
-	data["flow_std"] = data[["flow_7", "flow_8", "flow_9", "flow_10", "flow_11", "flow_12", "flow_13", "flow_14"]].std(axis=1)
+	data["flow_mean"] = data[use_col].mean(axis=1)
+	data["flow_max"] = data[use_col].max(axis=1)
+	data["flow_min"] = data[use_col].min(axis=1)
+	data["flow_sum"] = data[use_col].sum(axis=1)
+	data["flow_std"] = data[use_col].std(axis=1)
 	feat_col.extend(["flow_mean", "flow_max", "flow_min", "flow_sum", "flow_std"])
-	for i in range(24*7, 24*7+13):
+	for i in range(24*day, 24*day+13):
 		data[f"flow_lag_{i}"] = data.groupby(["flow_id"])["flow"].shift(i)
 		data[f"flow_roll_{i}"] = data.groupby(["flow_id"])["flow"].shift(i).rolling(i+1).mean()
 		feat_col.extend([f"flow_lag_{i}", f"flow_roll_{i}"])
 	data["time"] = pd.to_datetime(data["time"])
 	data["month"] = data["time"].dt.month
-	# data["week"] = data["time"].dt.week
-	# data["day"] = data["time"].dt.day
 	data["dayofweek"] = data["time"].dt.dayofweek
-	# data["dayofyear"] = data["time"].dt.dayofyear
 	data["hour"] = data["time"].dt.hour
 	data['sin_hour'] = np.sin(2 * np.pi * data["hour"] / 24)
 	data['cos_hour'] = np.cos(2 * np.pi * data["hour"] / 24)
@@ -141,8 +140,6 @@ def train(data, flag = 0):
 	train4 = data[(data['time'] >= '2022-07-28 01:00:00') & (data['time'] < '2022-08-21 01:00:00')].reset_index(
 		drop=True)
 	train1["pre"] = 0
-	data, feat = fueat(train1)
-	train_ = data[data['time'] >= '2022-03-01 01:00:00']
 	pre_list = []
 	pre_list_knn = []
 	pre_list_svr = []
@@ -150,36 +147,44 @@ def train(data, flag = 0):
 	pre_list_rand = []
 	pre_list_linear = []
 	test_list = []
+
 	for id in [
 		"flow_1", "flow_2", "flow_3", "flow_4", "flow_5", "flow_6", "flow_7", "flow_8", "flow_9", "flow_10", "flow_11",
 		"flow_12", "flow_13", "flow_14", "flow_15", "flow_16", "flow_17", "flow_18", "flow_19", "flow_20"
 	]:
 		print(f"+++++++++++++++++{id}+++++++++++++++++++++")
-		train = train_[train_["flow_id"] == id]
-		X_data, y_data = train[feat], train["flow"].values
-		stand = MinMaxScaler()
-		X_data = stand.fit_transform(X_data)
-		X_train, X_test, y_train, y_test = train_test_split(X_data, y_data, test_size=0.3, random_state=2022)
-		if flag:
-			pre = model(X_train, X_test, y_train, y_test, flag=flag, if_train=True)
-			pre_list.extend(pre)
-			test_list.extend(y_test)
-			print("mlse:", MSLE(test_list, pre_list, flag=1))
-		else:
-			pre_all, pre_knn, pre_svr, pre_bagg, pre_rand, pr_linear = model(X_train, X_test, y_train, y_test, flag=flag, if_train=True)
-			pre_list.extend(pre_all)
-			pre_list_knn.extend(pre_knn)
-			pre_list_svr.extend(pre_svr)
-			pre_list_bagg.extend(pre_bagg)
-			pre_list_rand.extend(pre_rand)
-			pre_list_linear.extend(pr_linear)
-			test_list.extend(y_test)
-			print("knn mlse:", MSLE(test_list, pre_list_knn, flag=1))
-			print("svr mlse:", MSLE(test_list, pre_list_svr, flag=1))
-			print("bagg mlse:", MSLE(test_list, pre_list_bagg, flag=1))
-			print("rand mlse:", MSLE(test_list, pre_list_rand, flag=1))
-			print("linear mlse:", MSLE(test_list, pre_list_linear, flag=1))
-			print("mlse:", MSLE(test_list, pre_list, flag=1))
+		for day in range(7, 0, -1):
+			data, feat = fueat(train1, day)
+			train_ = data[data['time'] >= '2022-03-01 01:00:00']
+			train__ = train_[train_["flow_id"] == id]
+			print(f"+++++++++++++++++{day}+++++++++++++++++++++")
+			train = train__.iloc[:-24*day, :]
+			X_data, y_data = train.loc[:, feat], train.loc[:, ["flow"]].values
+			stand = MinMaxScaler()
+			X_data = stand.fit_transform(X_data)
+			X_train, y_train = X_data[:-24*(day+1)], y_data[:-24*(day+1)].flatten()
+			X_test, y_test = X_data[-24*(day+1):], y_data[-24*(day+1):].flatten()
+			if flag:
+				pre = model(X_train, X_test, y_train, y_test, flag=flag, if_train=True)
+				pre_list.extend(pre)
+				test_list.extend(y_test)
+				print("mlse:", MSLE(test_list, pre_list, flag=1))
+			else:
+				pre_all, pre_knn, pre_svr, pre_bagg, pre_rand, pr_linear = model(X_train, X_test, y_train, y_test, flag=flag, if_train=True)
+				pre_list.extend(pre_all)
+				pre_list_knn.extend(pre_knn)
+				pre_list_svr.extend(pre_svr)
+				pre_list_bagg.extend(pre_bagg)
+				pre_list_rand.extend(pre_rand)
+				pre_list_linear.extend(pr_linear)
+				test_list.extend(y_test)
+				print("knn mlse:", MSLE(test_list, pre_list_knn, flag=1))
+				print("svr mlse:", MSLE(test_list, pre_list_svr, flag=1))
+				print("bagg mlse:", MSLE(test_list, pre_list_bagg, flag=1))
+				print("rand mlse:", MSLE(test_list, pre_list_rand, flag=1))
+				print("linear mlse:", MSLE(test_list, pre_list_linear, flag=1))
+				print("mlse:", MSLE(test_list, pre_list, flag=1))
+				train1.loc[train__.iloc[-24*(day+1):, :].index, ["flow"]] = pre_all
 
 
 def model_test(data):
@@ -207,10 +212,9 @@ def model_test(data):
 		cv=5
 	)
 	for i, time in enumerate(['2022-05-08 00:00:00', '2022-06-08 00:00:00', '2022-07-28 00:00:00', '2022-08-28 00:00:00']):
-		print(f"+++++++++++++++++{time}+++++++++++++++++++++")
 		data_ = orinal_data[orinal_data["time"] <= time]
 		feat_data, feat = fueat(data_)
-		train_ = feat_data[feat_data['time'] >= '2022-03-01 01:00:00']
+		train_ = feat_data[feat_data['time'] >= '2022-02-15 01:00:00']
 		# 对其进行标准化
 		stand = StandardScaler()
 		stand_train = stand.fit_transform(train_[feat])
